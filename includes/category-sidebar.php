@@ -46,15 +46,15 @@ $category_labels = [
     <div class="sidebar-search">
         <div class="search-box">
             <i class="ph-magnifying-glass"></i>
-            <input type="text" id="sidebar-search-input" placeholder="Buscar consulta..." onkeyup="filterSidebarItems(this.value)">
+            <input type="text" id="sidebar-search-input" placeholder="Buscar consulta..."
+                onkeyup="filterSidebarItems(this.value)">
         </div>
     </div>
 
     <div class="sidebar-tabs">
         <?php foreach ($category_labels as $key => $label): ?>
-            <button class="sidebar-tab <?php echo $key === $current_category ? 'active' : ''; ?>" 
-                    onclick="switchCategory('<?php echo $key; ?>')"
-                    data-category="<?php echo $key; ?>">
+            <button class="sidebar-tab <?php echo $key === $current_category ? 'active' : ''; ?>"
+                onclick="switchCategory('<?php echo $key; ?>')" data-category="<?php echo $key; ?>">
                 <?php echo $label; ?>
             </button>
         <?php endforeach; ?>
@@ -62,14 +62,14 @@ $category_labels = [
 
     <div class="sidebar-content">
         <?php foreach ($all_integrations as $cat_key => $integrations): ?>
-            <div class="sidebar-list" data-category="<?php echo $cat_key; ?>" 
-                 style="display: <?php echo $cat_key === $current_category ? 'flex' : 'none'; ?>;">
+            <div class="sidebar-list" data-category="<?php echo $cat_key; ?>"
+                style="display: <?php echo $cat_key === $current_category ? 'flex' : 'none'; ?>;">
                 <?php foreach ($integrations as $integration): ?>
-                    <a href="?page=serpro-cnpj-quotas&integration=<?php echo $integration['id']; ?>" 
-                       class="sidebar-item <?php echo isset($_GET['integration']) && $_GET['integration'] === $integration['id'] ? 'active' : ''; ?>"
-                       data-name="<?php echo strtolower($integration['name']); ?>"
-                       data-desc="<?php echo strtolower($integration['description']); ?>">
-                        
+                    <a href="<?php echo serc_get_dashboard_url(['view' => 'query', 'integration' => $integration['id']]); ?>"
+                        class="sidebar-item <?php echo isset($_GET['integration']) && $_GET['integration'] === $integration['id'] ? 'active' : ''; ?>"
+                        data-name="<?php echo strtolower($integration['name']); ?>"
+                        data-desc="<?php echo strtolower($integration['description']); ?>">
+
                         <div class="sidebar-item-header">
                             <div class="sidebar-icon">
                                 <i class="<?php echo $integration['icon'] ?? 'ph-puzzle-piece'; ?>"></i>
@@ -81,8 +81,8 @@ $category_labels = [
 
                         <div class="sidebar-item-footer">
                             <span class="sidebar-item-value">
-                                <img src="<?php echo plugins_url('assets/img/credit.svg', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>" alt="Ícone Créditos"
-                                    style="width: 14px; height: 14px; vertical-align: middle;">
+                                <img src="<?php echo plugins_url('assets/img/credit.svg', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>"
+                                    alt="Ícone Créditos" style="width: 14px; height: 14px; vertical-align: middle;">
                                 <?php echo esc_html($integration['value']); ?> créditos
                             </span>
                             <button class="sidebar-item-btn"

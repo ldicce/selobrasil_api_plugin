@@ -59,7 +59,7 @@ $current_integrations = serc_get_category_integrations($category);
         </div>
 
         <?php foreach ($current_integrations as $integration): ?>
-            <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=query&integration=' . esc_attr($integration['id'])); ?>"
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'query', 'integration' => $integration['id']]); ?>"
                 style="text-decoration: none; color: inherit; display: block;">
                 <div class="integration-row" style="cursor: pointer;">
                     <div class="integration-info">

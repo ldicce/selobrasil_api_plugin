@@ -19,19 +19,19 @@ include plugin_dir_path(__FILE__) . 'includes/sidebar.php';
 
             <div class="action-grid">
                 <div class="action-grid">
-                    <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=category&type=cpf'); ?>"
+                    <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'cpf']); ?>"
                         class="action-card">
                         <i class="ph ph-identification-card"></i> Consultar CPF
                     </a>
-                    <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=category&type=cnpj'); ?>"
+                    <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'cnpj']); ?>"
                         class="action-card">
                         <i class="ph ph-buildings"></i> Consultar CNPJ
                     </a>
-                    <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=category&type=veicular'); ?>"
+                    <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'veicular']); ?>"
                         class="action-card">
                         <i class="ph ph-car"></i> Veicular
                     </a>
-                    <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=category&type=juridico'); ?>"
+                    <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'juridico']); ?>"
                         class="action-card" style="background: #f0f7f4">
                         <i class="ph ph-scales"></i> Jurídico
                     </a>

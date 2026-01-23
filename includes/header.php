@@ -10,15 +10,16 @@ if (!defined('ABSPATH'))
         echo '<style>' . file_get_contents($style_path) . '</style>';
     }
     ?>
-    
+
     <!-- Fonts Injection (Direct) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
 
     <!-- LOGO AREA -->
     <div class="area-logo">
-        <a href="<?php echo admin_url('admin.php?page=serc-dashboard'); ?>"
+        <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>"
             style="display:flex;align-items:center;text-decoration:none;">
             <img src="<?php echo plugins_url('assets/img/LOGO.svg', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>"
                 alt="Selo Brasil" style="height: 40px;">
@@ -28,7 +29,7 @@ if (!defined('ABSPATH'))
     <!-- HEADER -->
     <div class="area-header">
         <div class="header-left">
-            <a href="<?php echo admin_url('admin.php?page=serc-dashboard'); ?>" class="dashboard-crumb">
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" class="dashboard-crumb">
                 <i class="ph-fill ph-squares-four"></i> Dashboard
             </a>
             <div class="global-search">

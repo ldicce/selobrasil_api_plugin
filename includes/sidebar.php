@@ -9,19 +9,19 @@ $current_page = $_GET['view'] ?? 'dashboard';
 <div class="area-sidebar">
     <ul class="nav-menu">
         <li class="nav-item">
-            <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=dashboard'); ?>"
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>"
                 class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
                 <i class="ph-fill ph-house"></i> Dashboard
             </a>
         </li>
         <li class="nav-item">
-            <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=category'); ?>"
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'category']); ?>"
                 class="nav-link <?php echo $current_page === 'category' || $current_page === 'query' || $current_page === 'consulta' ? 'active' : ''; ?>">
                 <i class="ph-bold ph-magnifying-glass"></i> Consultas
             </a>
         </li>
         <li class="nav-item">
-            <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=history'); ?>"
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'history']); ?>"
                 class="nav-link <?php echo $current_page === 'history' ? 'active' : ''; ?>">
                 <i class="ph-duotone ph-clock-counter-clockwise"></i> Histórico
             </a>
