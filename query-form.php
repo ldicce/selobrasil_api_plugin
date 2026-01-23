@@ -42,7 +42,7 @@ if (!$integration) {
 
             <div class="query-meta">
                 <div class="query-meta-item">
-                    <img src="<?php echo plugin_dir_url(__FILE__); ?>assets/img/credit.svg" alt="Ícone Créditos" style="width: 18px; height: 18px; vertical-align: middle;">
+                    <img src="<?php echo plugins_url('assets/img/credit.svg', __FILE__); ?>" alt="Ícone Créditos" style="width: 18px; height: 18px; vertical-align: middle;">
                     Valor: <strong>
                         <?php echo esc_html($integration['value']); ?> créditos
                     </strong>
