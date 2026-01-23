@@ -2,7 +2,7 @@
 /*
 Plugin Name: Selo Brasil - Consultas
 Description: Define cotas fixas automaticamente sempre que um pedido é criado com status Concluído.
-Version: 1.3
+Version: 1.31
 Author: Selo Brasil
 */
 
@@ -998,6 +998,9 @@ function serc_render_dashboard_page()
 {
     // Basic router based on 'view' parameter
     $view = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'dashboard';
+
+    // DEBUG LOG
+    error_log("[SERC DEBUG] serc_render_dashboard_page called. GET view: " . ($_GET['view'] ?? 'NULL') . ", Final view: " . $view);
 
     // Map views to files
     switch ($view) {
