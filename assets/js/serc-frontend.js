@@ -320,6 +320,13 @@ jQuery(function ($) {
               // Replace content
               $('.area-content').html(response.data.html);
 
+              // Adjust grid layout based on view type
+              if (response.data.view === 'category') {
+                $('.area-content').css('grid-template-columns', '1fr');
+              } else {
+                $('.area-content').css('grid-template-columns', '');
+              }
+
               // Update sidebar active state
               updateSidebarActiveState(response.data.view);
 
