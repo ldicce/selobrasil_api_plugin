@@ -2,7 +2,7 @@
 /*
 Plugin Name: Selo Brasil - Consultas
 Description: Define cotas fixas automaticamente sempre que um pedido é criado com status Concluído.
-Version: 1.34
+Version: 1.35
 Author: Selo Brasil
 */
 
@@ -14,17 +14,32 @@ define('SERCNPJ_NONCE', 'serpro_cnpj_nonce');
 /**
  * Helper to generate correct dashboard URLs
  * Handles both Admin (page query arg) and Frontend (permalink)
+ * Also handles AJAX requests from frontend correctly
  */
 function serc_get_dashboard_url($params = [])
 {
+    // Check if this is a frontend AJAX request
+    // is_admin() returns true for AJAX, but we need to detect frontend AJAX
+    $is_frontend_ajax = defined('DOING_AJAX') && DOING_AJAX &&
+        isset($_SERVER['HTTP_REFERER']) &&
+        strpos($_SERVER['HTTP_REFERER'], admin_url()) === false;
+
     // Basic base URL
-    if (is_admin()) {
+    if (is_admin() && !$is_frontend_ajax) {
         $base_url = admin_url('admin.php');
         $params['page'] = 'serc-dashboard';
     } else {
-        // Frontend: Use current URL but clean our custom params first to rebuild them
-        global $wp;
-        $base_url = home_url(add_query_arg([], $wp->request));
+        // Frontend: Use the consultas page URL
+        // Try to detect from referer for AJAX requests
+        if ($is_frontend_ajax && isset($_SERVER['HTTP_REFERER'])) {
+            // Parse referer to get base URL without query params
+            $referer = $_SERVER['HTTP_REFERER'];
+            $parsed = wp_parse_url($referer);
+            $base_url = $parsed['scheme'] . '://' . $parsed['host'] . $parsed['path'];
+        } else {
+            global $wp;
+            $base_url = home_url(add_query_arg([], $wp->request));
+        }
     }
 
     return add_query_arg($params, $base_url);
@@ -109,7 +124,7 @@ function serc_frontend_assets()
 {
     // jQuery Mask for CPF/CNPJ formatting
     wp_enqueue_script('jquery-mask', plugins_url('jQuery-Mask-Plugin-master/dist/jquery.mask.min.js', __FILE__), array('jquery'), '1.14.16', true);
-    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '1.34', true);
+    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '1.35', true);
 
     // External Assets (Google Fonts & Phosphor Icons)
     wp_enqueue_style('serc-google-fonts', 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap', array(), null);
@@ -117,7 +132,7 @@ function serc_frontend_assets()
 
 
     // Main Dashboard Styles
-    wp_enqueue_style('serc-dashboard-style', plugins_url('assets/css/style.css', __FILE__), array(), '1.34');
+    wp_enqueue_style('serc-dashboard-style', plugins_url('assets/css/style.css', __FILE__), array(), '1.35');
 
     wp_localize_script('serc-frontend', 'serc_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),

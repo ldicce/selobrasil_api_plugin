@@ -17,6 +17,9 @@ if (!defined('ABSPATH'))
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
 
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
     <!-- Dashboard Navigation Script -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
@@ -26,7 +29,7 @@ if (!defined('ABSPATH'))
         };
     </script>
     <script
-        src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>?v=1.33"></script>
+        src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>?v=1.35"></script>
 
     <!-- LOGO AREA -->
     <div class="area-logo">

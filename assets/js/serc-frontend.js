@@ -274,8 +274,20 @@ jQuery(function ($) {
         // Add active to correct link based on view
         $('.nav-menu .nav-link').each(function () {
           var href = $(this).attr('href') || '';
-          if (href.indexOf('view=' + targetView) !== -1 ||
-            (targetView === 'dashboard' && (href.indexOf('view=dashboard') !== -1 || href.indexOf('view=') === -1))) {
+
+          // Skip placeholder links (href="#" or empty)
+          if (href === '#' || href === '' || href === window.location.href + '#') {
+            return;
+          }
+
+          // Match dashboard specifically
+          if (targetView === 'dashboard') {
+            // Only match links with explicit view=dashboard or the base consultas URL without view param
+            if (href.indexOf('view=dashboard') !== -1 ||
+              (href.indexOf('/consultas') !== -1 && href.indexOf('view=') === -1)) {
+              $(this).addClass('active');
+            }
+          } else if (href.indexOf('view=' + targetView) !== -1) {
             $(this).addClass('active');
           }
         });
