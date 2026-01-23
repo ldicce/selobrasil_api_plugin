@@ -19,8 +19,14 @@ if (!defined('ABSPATH'))
 
     <!-- Dashboard Navigation Script -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        var serc_ajax = {
+            ajax_url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            nonce: '<?php echo wp_create_nonce('serpro_cnpj_nonce'); ?>'
+        };
+    </script>
     <script
-        src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>"></script>
+        src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>?v=1.33"></script>
 
     <!-- LOGO AREA -->
     <div class="area-logo">
