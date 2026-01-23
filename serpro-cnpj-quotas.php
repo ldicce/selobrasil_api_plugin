@@ -83,12 +83,44 @@ add_shortcode( 'serc_credit_balance', 'serc_credit_balance_shortcode' );
 function serc_frontend_assets() {
     // jQuery Mask for CPF/CNPJ formatting
     wp_enqueue_script( 'jquery-mask', plugin_dir_url(__FILE__) . 'jQuery-Mask-Plugin-master/dist/jquery.mask.min.js', array('jquery'), '1.14.16', true );
-wp_enqueue_script( 'serc-frontend', plugin_dir_url(__FILE__) . 'serc-frontend.js', array('jquery','jquery-mask'), '1.23', true );
+    wp_enqueue_script( 'serc-frontend', plugin_dir_url(__FILE__) . 'serc-frontend.js', array('jquery','jquery-mask'), '1.23', true );
+    
+    // External Assets (Google Fonts & Phosphor Icons)
+    wp_enqueue_style( 'serc-google-fonts', 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap', array(), null );
+    wp_enqueue_script( 'serc-phosphor-icons', 'https://unpkg.com/@phosphor-icons/web', array(), null, false );
+
+    
+    // Main Dashboard Styles
+    wp_enqueue_style( 'serc-dashboard-style', plugin_dir_url(__FILE__) . 'assets/css/style.css', array(), '1.0' );
+
     wp_localize_script( 'serc-frontend', 'serc_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce( SERCNPJ_NONCE )
     ) );
 }
+
+/* =========================
+   Helper Functions
+   ========================= */
+function serc_get_user_credits() {
+    if (!is_user_logged_in()) return 0.00;
+    
+    $user_id = get_current_user_id();
+    $balance = get_user_meta($user_id, 'serc_credit_balance', true);
+    
+    // Fallback logic if needed (legacy wallet system)
+    if ($balance === '') {
+        $wallet = serc_get_wallet($user_id);
+        $sum = 0.0;
+        foreach ($wallet as $entry) {
+            $sum += floatval($entry['balance'] ?? 0);
+        }
+        $balance = $sum;
+    }
+    
+    return floatval($balance);
+}
+
 
 /* =========================
    Shortcode
@@ -851,12 +883,46 @@ function serc_certidao_nacional_debitos_trabalhistas_form_shortcode( $atts ) {
 }
 
 /* =========================
-   Admin: Lista de Shortcodes
+   Admin Menu & Dashboard
    ========================= */
 function serc_add_admin_menu() {
+    // Main Dashboard Page
+    add_menu_page(
+        'Selo Brasil',          // Page title
+        'Selo Brasil',          // Menu title
+        'manage_options',       // Capability
+        'serc-dashboard',       // Menu slug
+        'serc_render_dashboard_page', // Callback
+        'dashicons-chart-pie',  // Icon (or custom)
+        6                       // Position
+    );
+
     add_options_page( 'Serpro Consultas - Shortcodes', 'Serpro Consultas', 'manage_options', 'serpro-consultas-shortcodes', 'serc_shortcodes_page' );
     add_options_page( 'API Full – Token', 'API Full – Token', 'manage_options', 'serpro-apifull-token', 'serc_token_page' );
 }
+
+function serc_render_dashboard_page() {
+    // Basic router based on 'view' parameter
+    $view = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'dashboard';
+
+    // Map views to files
+    switch ($view) {
+        case 'history':
+            include plugin_dir_path(__FILE__) . 'history-view.php';
+            break;
+        case 'query':
+            include plugin_dir_path(__FILE__) . 'query-form.php';
+            break;
+        case 'category':
+            include plugin_dir_path(__FILE__) . 'category-view.php';
+            break;
+        case 'dashboard':
+        default:
+            include plugin_dir_path(__FILE__) . 'dashboard.php';
+            break;
+    }
+}
+
 
 function serc_shortcodes_page() {
     $shortcodes = array(

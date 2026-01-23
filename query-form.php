@@ -22,174 +22,12 @@ if (!$integration) {
 
 <!-- MAIN CONTENT -->
 <div class="area-content">
-    <style>
-        /* Query Form Specific Styles */
-        .query-container {
-            background: #fff;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-            border: 1px solid #eee;
-        }
-
-        .query-header {
-            margin-bottom: 30px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 20px;
-        }
-
-        .query-breadcrumb {
-            font-size: 13px;
-            color: #777;
-            margin-bottom: 12px;
-        }
-
-        .query-breadcrumb a {
-            color: var(--primary-green);
-            text-decoration: none;
-        }
-
-        .query-breadcrumb a:hover {
-            text-decoration: underline;
-        }
-
-        .query-title {
-            font-size: 28px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin: 0 0 10px 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .query-title i {
-            color: var(--primary-green);
-            font-size: 32px;
-        }
-
-        .query-description {
-            color: #666;
-            font-size: 15px;
-        }
-
-        .query-meta {
-            display: flex;
-            gap: 30px;
-            margin-top: 15px;
-        }
-
-        .query-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: #555;
-        }
-
-        .query-meta-item i {
-            color: var(--primary-green);
-        }
-
-        .query-meta-item strong {
-            color: var(--primary-green);
-            font-weight: 600;
-        }
-
-        .query-form-section {
-            margin-top: 30px;
-        }
-
-        .query-form-section h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 20px 0;
-        }
-
-        .form-wrapper {
-            background: #f9f9f9;
-            padding: 25px;
-            border-radius: 8px;
-            border: 1px solid #eee;
-        }
-
-        /* Enhance form styles from shortcodes */
-        .form-wrapper form {
-            max-width: 600px;
-        }
-
-        .form-wrapper label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #333;
-            font-size: 14px;
-        }
-
-        .form-wrapper input,
-        .form-wrapper select,
-        .form-wrapper textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-family: var(--font-main);
-            font-size: 14px;
-            margin-bottom: 16px;
-            background: #fff;
-        }
-
-        .form-wrapper input:focus,
-        .form-wrapper select:focus,
-        .form-wrapper textarea:focus {
-            outline: none;
-            border-color: var(--primary-green);
-        }
-
-        .form-wrapper button[type="submit"] {
-            background: var(--primary-green) !important;
-            color: #fff !important;
-            border: none !important;
-            padding: 12px 30px !important;
-            border-radius: 6px !important;
-            font-weight: 500 !important;
-            cursor: pointer !important;
-            font-size: 15px !important;
-            margin-top: 10px !important;
-        }
-
-        .form-wrapper button[type="submit"]:hover {
-            background: #007a41 !important;
-        }
-
-        .result-section {
-            margin-top: 30px;
-        }
-
-        .result-section h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 15px 0;
-        }
-    </style>
-
-    <!-- Load jQuery and scripts for AJAX functionality -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="<?php echo plugin_dir_url(__FILE__); ?>jQuery-Mask-Plugin-master/dist/jquery.mask.min.js"></script>
-    <script>
-        // Inject AJAX configuration for preview environment
-        var serc_ajax = {
-            ajax_url: '/preview.php?ajax=1',
-            nonce: 'preview_nonce'
-        };
-    </script>
-    <script src="<?php echo plugin_dir_url(__FILE__); ?>serc-frontend.js"></script>
 
     <div class="query-container">
         <div class="query-header">
             <div class="query-breadcrumb">
-                <a href="?p=dashboard">Dashboard</a> /
-                <a href="?p=consulta&type=<?php echo esc_attr($integration_id); ?>">Consultas</a> /
+                <a href="<?php echo admin_url('admin.php?page=serc-dashboard'); ?>">Dashboard</a> /
+                <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=category&type=' . esc_attr($integration_id)); ?>">Consultas</a> /
                 <?php echo esc_html($integration['name']); ?>
             </div>
 
@@ -204,7 +42,7 @@ if (!$integration) {
 
             <div class="query-meta">
                 <div class="query-meta-item">
-                    <img src="img/credit.svg" alt="Ícone Créditos" style="width: 18px; height: 18px; vertical-align: middle;">
+                    <img src="<?php echo plugin_dir_url(__FILE__); ?>assets/img/credit.svg" alt="Ícone Créditos" style="width: 18px; height: 18px; vertical-align: middle;">
                     Valor: <strong>
                         <?php echo esc_html($integration['value']); ?> créditos
                     </strong>
@@ -267,7 +105,4 @@ if (!$integration) {
 </div>
 
 
-<?php wp_footer(); ?>
-</body>
-
-</html>
+<?php // No footer needed for admin partial ?>
