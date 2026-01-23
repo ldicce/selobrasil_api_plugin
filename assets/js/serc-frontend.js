@@ -255,6 +255,32 @@ jQuery(function ($) {
 
       console.log('[SERC Navigation] Dashboard detected, AJAX navigation enabled');
 
+      // Function to update main sidebar active state
+      function updateSidebarActiveState(view) {
+        // Map views to sidebar link selectors
+        var viewMap = {
+          'dashboard': 'dashboard',
+          'category': 'category',
+          'query': 'category',  // Query is part of Consultas
+          'consulta': 'category',
+          'history': 'history'
+        };
+
+        var targetView = viewMap[view] || 'dashboard';
+
+        // Remove active from all nav links
+        $('.nav-menu .nav-link').removeClass('active');
+
+        // Add active to correct link based on view
+        $('.nav-menu .nav-link').each(function () {
+          var href = $(this).attr('href') || '';
+          if (href.indexOf('view=' + targetView) !== -1 ||
+            (targetView === 'dashboard' && (href.indexOf('view=dashboard') !== -1 || href.indexOf('view=') === -1))) {
+            $(this).addClass('active');
+          }
+        });
+      }
+
       // Function to load view via AJAX
       function loadView(url) {
         console.log('[SERC Navigation] Loading view:', url);
@@ -278,9 +304,12 @@ jQuery(function ($) {
           success: function (response) {
             console.log('[SERC Navigation] Response received:', response);
 
-            if (response.success && response.data.html) {
+            if (response.success && response.data && response.data.html) {
               // Replace content
               $('.area-content').html(response.data.html);
+
+              // Update sidebar active state
+              updateSidebarActiveState(response.data.view);
 
               // Update URL without reload
               window.history.pushState({ view: response.data.view }, '', url);

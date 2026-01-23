@@ -2,7 +2,7 @@
 /*
 Plugin Name: Selo Brasil - Consultas
 Description: Define cotas fixas automaticamente sempre que um pedido é criado com status Concluído.
-Version: 1.32
+Version: 1.33
 Author: Selo Brasil
 */
 
@@ -1021,6 +1021,7 @@ function serc_render_dashboard_page()
 
 /**
  * AJAX handler to load dashboard views dynamically
+ * Returns ONLY the inner content (without header/sidebar) for AJAX requests
  */
 function serc_load_dashboard_view()
 {
@@ -1029,33 +1030,481 @@ function serc_load_dashboard_view()
     $type = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
     $integration = isset($_GET['integration']) ? sanitize_text_field($_GET['integration']) : '';
 
+    // Load integrations config for category/query views
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+
     // Start output buffering
     ob_start();
 
-    // Map views to files
+    // Generate ONLY the inner content (no header/sidebar wrapper)
     switch ($view) {
         case 'history':
-            include plugin_dir_path(__FILE__) . 'history-view.php';
+            // History view content
+            $uid = get_current_user_id();
+            $consultas = [];
+
+            if ($uid) {
+                $args = array(
+                    'post_type' => 'serc_consulta',
+                    'post_status' => 'private',
+                    'author' => $uid,
+                    'posts_per_page' => 20,
+                    'orderby' => 'date',
+                    'order' => 'DESC'
+                );
+
+                $query = new WP_Query($args);
+                if ($query->have_posts()) {
+                    while ($query->have_posts()) {
+                        $query->the_post();
+                        $pid = get_the_ID();
+                        $consultas[] = [
+                            'ID' => $pid,
+                            'date' => get_the_date('Y-m-d H:i:s'),
+                            'type' => get_post_meta($pid, 'type', true),
+                            'status' => get_post_meta($pid, 'upload_status', true) ? 'success' : 'pending',
+                            'filename' => get_post_meta($pid, 'filename', true),
+                        ];
+                    }
+                    wp_reset_postdata();
+                }
+            }
+            ?>
+            <div class="history-container" style="grid-column: 1 / -1;">
+                <div class="history-header">
+                    <h2>
+                        <i class="ph-duotone ph-clock-counter-clockwise"></i>
+                        Histórico de Consultas
+                    </h2>
+                </div>
+
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Tipo de Consulta</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($consultas)): ?>
+                            <tr>
+                                <td colspan="4" class="empty-state">
+                                    <i class="ph-duotone ph-magnifying-glass"
+                                        style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
+                                    Nenhuma consulta encontrada no histórico.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($consultas as $consulta): ?>
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 500;">
+                                            <?php echo date('d/m/Y', strtotime($consulta['date'])); ?>
+                                        </div>
+                                        <div style="font-size: 12px; color: #888;">
+                                            <?php echo date('H:i', strtotime($consulta['date'])); ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong><?php echo esc_html($consulta['type']); ?></strong>
+                                        <div style="font-size: 12px; color: #888;">ID: #<?php echo esc_html($consulta['ID']); ?></div>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        $statusClass = ($consulta['status'] === 'success') ? 'status-success' : 'status-pending';
+                                        $statusIcon = ($consulta['status'] === 'success') ? 'ph-check-circle' : 'ph-hourglass';
+                                        $statusText = ($consulta['status'] === 'success') ? 'Concluído' : 'Processando';
+                                        ?>
+                                        <span class="status-badge <?php echo $statusClass; ?>">
+                                            <i class="ph-fill <?php echo $statusIcon; ?>" style="margin-right: 4px;"></i>
+                                            <?php echo $statusText; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($consulta['filename'])): ?>
+                                            <a href="#" class="action-btn">
+                                                <i class="ph-bold ph-download-simple"></i>
+                                                Download PDF
+                                            </a>
+                                        <?php else: ?>
+                                            <span style="color: #999; font-size: 13px;">Processando...</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php
             break;
+
         case 'query':
-            include plugin_dir_path(__FILE__) . 'query-form.php';
+            // Query form view content
+            $integration_id = $integration;
+            $integration_data = serc_get_integration_by_id($integration_id);
+
+            if (!$integration_data) {
+                echo '<div class="error-message">Integração não encontrada.</div>';
+            } else {
+                ?>
+                <div class="query-container">
+                    <div class="query-header">
+                        <div class="query-breadcrumb">
+                            <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>">Dashboard</a> /
+                            <a
+                                href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => $integration_data['category'] ?? 'cpf']); ?>">Consultas</a>
+                            /
+                            <?php echo esc_html($integration_data['name']); ?>
+                        </div>
+
+                        <h1 class="query-title">
+                            <i class="<?php echo esc_attr($integration_data['icon'] ?? 'ph-file-text'); ?>"></i>
+                            <?php echo esc_html($integration_data['name']); ?>
+                        </h1>
+
+                        <p class="query-description">
+                            <?php echo esc_html($integration_data['description']); ?>
+                        </p>
+
+                        <div class="query-meta">
+                            <div class="query-meta-item">
+                                <img src="<?php echo plugins_url('assets/img/credit.svg', __FILE__); ?>" alt="Créditos"
+                                    style="width: 18px; height: 18px; vertical-align: middle;">
+                                Valor: <strong><?php echo esc_html($integration_data['value']); ?> créditos</strong>
+                            </div>
+                            <div class="query-meta-item">
+                                <i class="ph ph-tag"></i>
+                                Tipo: <strong><?php echo esc_html($integration_data['type']); ?></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="query-form-section">
+                        <h3>Preencha os dados para consulta</h3>
+                        <div class="form-wrapper">
+                            <form class="serc-form" data-type="<?php echo esc_attr($integration_data['id']); ?>">
+                                <?php
+                                $fields = $integration_data['fields'] ?? [];
+                                if (empty($fields)): ?>
+                                    <p style="color: #999;">Formulário em desenvolvimento. Em breve você poderá realizar consultas.</p>
+                                <?php else: ?>
+                                    <?php foreach ($fields as $field): ?>
+                                        <label for="<?php echo esc_attr($field['name']); ?>">
+                                            <?php echo esc_html($field['label']); ?>:
+                                            <?php if (!empty($field['required'])): ?>
+                                                <span style="color: red;">*</span>
+                                            <?php endif; ?>
+                                        </label>
+                                        <input type="<?php echo esc_attr($field['type'] ?? 'text'); ?>"
+                                            id="<?php echo esc_attr($field['name']); ?>" name="<?php echo esc_attr($field['name']); ?>"
+                                            placeholder="<?php echo esc_attr($field['placeholder'] ?? ''); ?>" <?php if (!empty($field['class'])): ?> class="<?php echo esc_attr($field['class']); ?>" <?php endif; ?>                         <?php if (!empty($field['required'])): ?> required <?php endif; ?> />
+                                    <?php endforeach; ?>
+                                    <button type="submit">
+                                        <i class="ph-bold ph-magnifying-glass"></i> Consultar
+                                    </button>
+                                    <div class="serc-result" style="margin-top:20px;"></div>
+                                <?php endif; ?>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="result-section">
+                        <!-- Results will appear here after form submission -->
+                    </div>
+                </div>
+
+                <!-- Category Sidebar for Quick Navigation -->
+                <?php
+                // Include category sidebar inline
+                $all_integrations = serc_get_integrations_config();
+                $current_integration_id = $integration_id;
+                $current_category = '';
+
+                if ($current_integration_id) {
+                    foreach ($all_integrations as $cat_key => $integrations_list) {
+                        foreach ($integrations_list as $int) {
+                            if ($int['id'] === $current_integration_id) {
+                                $current_category = $cat_key;
+                                break 2;
+                            }
+                        }
+                    }
+                }
+                if (!$current_category) {
+                    $current_category = 'cpf';
+                }
+
+                $category_labels = [
+                    'cpf' => 'CPF',
+                    'cnpj' => 'CNPJ',
+                    'veicular' => 'Veicular',
+                    'juridico' => 'Jurídico'
+                ];
+                ?>
+                <div class="sidebar-wrapper">
+                    <div class="sidebar-search">
+                        <div class="search-box">
+                            <i class="ph-magnifying-glass"></i>
+                            <input type="text" id="sidebar-search-input" placeholder="Buscar consulta..."
+                                onkeyup="filterSidebarItems(this.value)">
+                        </div>
+                    </div>
+
+                    <div class="sidebar-tabs">
+                        <?php foreach ($category_labels as $key => $label): ?>
+                            <button class="sidebar-tab <?php echo $key === $current_category ? 'active' : ''; ?>"
+                                onclick="switchCategory('<?php echo $key; ?>')" data-category="<?php echo $key; ?>">
+                                <?php echo $label; ?>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="sidebar-content">
+                        <?php foreach ($all_integrations as $cat_key => $integrations_list): ?>
+                            <div class="sidebar-list" data-category="<?php echo $cat_key; ?>"
+                                style="display: <?php echo $cat_key === $current_category ? 'flex' : 'none'; ?>;">
+                                <?php foreach ($integrations_list as $int): ?>
+                                    <a href="<?php echo serc_get_dashboard_url(['view' => 'query', 'integration' => $int['id']]); ?>"
+                                        class="sidebar-item <?php echo $int['id'] === $current_integration_id ? 'active' : ''; ?>"
+                                        data-name="<?php echo strtolower($int['name']); ?>"
+                                        data-desc="<?php echo strtolower($int['description']); ?>">
+                                        <div class="sidebar-item-header">
+                                            <div class="sidebar-icon">
+                                                <i class="<?php echo $int['icon'] ?? 'ph-puzzle-piece'; ?>"></i>
+                                            </div>
+                                            <div class="sidebar-info">
+                                                <span class="sidebar-item-title"><?php echo esc_html($int['name']); ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="sidebar-item-footer">
+                                            <span class="sidebar-item-value">
+                                                <img src="<?php echo plugins_url('assets/img/credit.svg', __FILE__); ?>" alt="Créditos"
+                                                    style="width: 14px; height: 14px; vertical-align: middle;">
+                                                <?php echo esc_html($int['value']); ?> créditos
+                                            </span>
+                                            <button class="sidebar-item-btn"
+                                                onclick="event.preventDefault(); window.location.href=this.parentElement.parentElement.href;">
+                                                Consultar
+                                            </button>
+                                        </div>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <script>
+                    function switchCategory(category) {
+                        document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                            tab.classList.toggle('active', tab.dataset.category === category);
+                        });
+                        document.querySelectorAll('.sidebar-list').forEach(list => {
+                            list.style.display = list.dataset.category === category ? 'flex' : 'none';
+                        });
+                        document.getElementById('sidebar-search-input').value = '';
+                    }
+
+                    function filterSidebarItems(searchTerm) {
+                        searchTerm = searchTerm.toLowerCase().trim();
+                        const visibleList = document.querySelector('.sidebar-list[style*="flex"]') ||
+                            document.querySelector('.sidebar-list:not([style*="none"])');
+                        if (!visibleList) return;
+                        const items = visibleList.querySelectorAll('.sidebar-item');
+                        items.forEach(item => {
+                            const name = item.dataset.name || '';
+                            const desc = item.dataset.desc || '';
+                            const matches = name.includes(searchTerm) || desc.includes(searchTerm);
+                            item.style.display = matches ? 'block' : 'none';
+                        });
+                    }
+                </script>
+                <?php
+            }
             break;
+
         case 'category':
-            include plugin_dir_path(__FILE__) . 'category-view.php';
+            // Category view content
+            $category = $type ?: 'cpf';
+            $category_names = [
+                'cpf' => 'CPF',
+                'cnpj' => 'CNPJ',
+                'veicular' => 'Veicular',
+                'juridico' => 'Jurídico'
+            ];
+            $category_display = $category_names[$category] ?? 'Consultas';
+            $current_integrations = serc_get_category_integrations($category);
+            ?>
+            <div class="category-header" style="grid-column: 1 / -1;">
+                <h1 class="category-title">Categoria: <?php echo esc_html($category_display); ?></h1>
+
+                <div class="category-toolbar">
+                    <div class="category-search">
+                        <i class="ph ph-magnifying-glass"></i>
+                        <input type="text" placeholder="Buscar...">
+                    </div>
+                    <button class="btn-consultar-green">Consultar</button>
+                </div>
+
+                <div class="category-tabs">
+                    <button class="category-tab active">Categorias</button>
+                    <button class="category-tab">Lista completa</button>
+                </div>
+            </div>
+
+            <div class="integration-table" style="grid-column: 1 / -1;">
+                <div class="integration-header">
+                    <div>INTEGRAÇÃO</div>
+                    <div>VALOR</div>
+                    <div>TIPO</div>
+                    <div>ADICIONADO</div>
+                </div>
+
+                <?php foreach ($current_integrations as $int): ?>
+                    <a href="<?php echo serc_get_dashboard_url(['view' => 'query', 'integration' => $int['id']]); ?>"
+                        style="text-decoration: none; color: inherit; display: block;">
+                        <div class="integration-row" style="cursor: pointer;">
+                            <div class="integration-info">
+                                <div class="integration-icon">
+                                    <i class="<?php echo esc_attr($int['icon'] ?? 'ph-file-text'); ?>"></i>
+                                </div>
+                                <div class="integration-details">
+                                    <div class="integration-name"><?php echo esc_html($int['name']); ?></div>
+                                    <div class="integration-description"><?php echo esc_html($int['description']); ?></div>
+                                </div>
+                            </div>
+                            <div class="integration-value">
+                                <img src="<?php echo plugins_url('assets/img/credit.svg', __FILE__); ?>" alt="Créditos"
+                                    style="width: 18px; height: 18px; vertical-align: middle;">
+                                <?php echo esc_html($int['value']); ?>
+                            </div>
+                            <div class="integration-type"><?php echo esc_html($int['type']); ?></div>
+                            <div class="integration-date"><?php echo esc_html(date('d/m/Y')); ?></div>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+            <?php
             break;
+
         case 'dashboard':
         default:
-            include plugin_dir_path(__FILE__) . 'dashboard.php';
+            // Dashboard home content
+            ?>
+            <div class="dashboard-main">
+                <div class="main-card"
+                    style="margin-bottom: 30px; background: transparent; border: none; box-shadow: none; padding: 0;">
+                    <h2 class="welcome-title">O que você quer fazer agora?</h2>
+
+                    <div class="action-grid">
+                        <div class="action-grid">
+                            <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'cpf']); ?>"
+                                class="action-card">
+                                <i class="ph ph-identification-card"></i> Consultar CPF
+                            </a>
+                            <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'cnpj']); ?>"
+                                class="action-card">
+                                <i class="ph ph-buildings"></i> Consultar CNPJ
+                            </a>
+                            <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'veicular']); ?>"
+                                class="action-card">
+                                <i class="ph ph-car"></i> Veicular
+                            </a>
+                            <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'juridico']); ?>"
+                                class="action-card" style="background: #f0f7f4">
+                                <i class="ph ph-scales"></i> Jurídico
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-title">Créditos</div>
+                            <div class="stat-value">
+                                <img src="<?php echo plugins_url('assets/img/credit.svg', __FILE__); ?>" alt="Créditos"
+                                    style="width: 18px; height: 18px; vertical-align: middle;">
+                                <?php echo number_format(serc_get_user_credits(), 2, ',', ('.')); ?>
+                            </div>
+                            <button class="btn-buy-credits">
+                                <i class="ph-bold ph-shopping-bag"></i> Compra de créditos
+                            </button>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title">Uso hoje</div>
+                            <div class="stat-value" style="font-size: 24px;">
+                                12 <span style="font-size: 14px; font-weight: 400; color: #666; margin-left: 4px;">Consultas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="favorites-section">
+                        <h3>APIs favoritas</h3>
+                        <div class="fav-grid">
+                            <div class="fav-card"><i class="ph-fill ph-star"></i> CPF Completo <i class="ph-caret-right"
+                                    style="margin-left:auto; font-size:10px; color:#ccc;"></i></div>
+                            <div class="fav-card"><i class="ph-fill ph-star"></i> CNPJ Plus <i class="ph-caret-right"
+                                    style="margin-left:auto; font-size:10px; color:#ccc;"></i></div>
+                            <div class="fav-card"><i class="ph-fill ph-star"></i> Veicular Gold <i class="ph-caret-right"
+                                    style="margin-left:auto; font-size:10px; color:#ccc;"></i></div>
+                            <div class="fav-card"><i class="ph-fill ph-star"></i> Jurídico Gold <i class="ph-caret-right"
+                                    style="margin-left:auto; font-size:10px; color:#ccc;"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDEBAR (ACTIVITY) -->
+            <div class="right-sidebar">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin:0; font-size: 16px;">Últimas atividades</h3>
+                    <i class="ph-caret-right"></i>
+                </div>
+
+                <div class="activity-timeline">
+                    <div class="activity-item">
+                        <div class="activity-dot green"></div>
+                        <div class="activity-text">Acesso ao sistema</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-dot yellow"></div>
+                        <div class="activity-text">Consulta CPF</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-dot blue"></div>
+                        <div class="activity-text">Download do relatório</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-dot green"></div>
+                        <div class="activity-text">Requisição realizada na API: Nacional de Delitos Trabalhistas</div>
+                        <span class="activity-meta">Consultar requisição realizada</span>
+                    </div>
+                </div>
+
+                <button class="btn-see-all">Ver todos <i class="ph-caret-right"></i></button>
+
+                <div class="promo-card">
+                    <div class="promo-title">Novo plano Enterprise <i class="ph-fill ph-rocket"
+                            style="color:var(--primary-green)"></i></div>
+                    <p class="promo-text">Mais limites de APIs.</p>
+                    <a href="#" class="promo-link">Saiba mais ↗</a>
+                </div>
+            </div>
+            <?php
             break;
     }
 
     // Get the content
     $content = ob_get_clean();
 
-    // Return JSON response
+    // Return JSON response with the view for sidebar state update
     wp_send_json_success(array(
         'html' => $content,
-        'view' => $view
+        'view' => $view,
+        'type' => $type,
+        'integration' => $integration
     ));
 }
 
