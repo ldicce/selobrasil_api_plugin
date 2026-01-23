@@ -248,21 +248,81 @@ jQuery(function ($) {
     }
   }
 
-  // Frontend Dashboard Navigation Handler
-  // When using [serc_dashboard] shortcode, we need to reload the page
-  // when navigation links are clicked so WordPress re-processes the shortcode
+  // AJAX-based Dashboard Navigation
+  // Load views dynamically without full page reload
   $(document).ready(function () {
-    // Only run if we're on a page with dashboard content
     if ($('.dashboard-wrapper').length > 0) {
-      // Intercept clicks on dashboard navigation links
-      $(document).on('click', 'a[href*="view="]', function (e) {
+
+      console.log('[SERC Navigation] Dashboard detected, AJAX navigation enabled');
+
+      // Function to load view via AJAX
+      function loadView(url) {
+        console.log('[SERC Navigation] Loading view:', url);
+
+        var urlObj = new URL(url, window.location.origin);
+        var params = new URLSearchParams(urlObj.search);
+
+        // Show loading state
+        $('.area-content').css('opacity', '0.5');
+
+        // Make AJAX request
+        $.ajax({
+          url: serc_ajax.ajax_url,
+          type: 'GET',
+          data: {
+            action: 'serc_load_view',
+            view: params.get('view') || 'dashboard',
+            type: params.get('type') || '',
+            integration: params.get('integration') || ''
+          },
+          success: function (response) {
+            console.log('[SERC Navigation] Response received:', response);
+
+            if (response.success && response.data.html) {
+              // Replace content
+              $('.area-content').html(response.data.html);
+
+              // Update URL without reload
+              window.history.pushState({ view: response.data.view }, '', url);
+
+              // Restore opacity
+              $('.area-content').css('opacity', '1');
+
+              console.log('[SERC Navigation] Content updated successfully');
+            } else {
+              console.warn('[SERC Navigation] Invalid response, falling back to page reload');
+              // Fallback to full page load
+              window.location.href = url;
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error('[SERC Navigation] AJAX error:', status, error);
+            // Fallback to full page load on error
+            window.location.href = url;
+          }
+        });
+      }
+
+      // Intercept navigation clicks
+      $(document).on('click', 'a[href*="view="], .nav-link[href*="?"], .sidebar-tab[href*="?"], .action-card[href*="?"]', function (e) {
         var href = $(this).attr('href');
 
-        // Check if this is a relative URL (starts with ?) or contains current page
-        if (href && (href.indexOf('?') === 0 || href.indexOf(window.location.pathname) !== -1)) {
-          // Let the browser navigate normally, which will reload the page
-          // This ensures WordPress re-processes the shortcode with new parameters
-          return true;
+        console.log('[SERC Navigation] Link clicked:', href);
+
+        // Only intercept if it's a dashboard navigation link
+        if (href && href !== '#' && href !== 'javascript:void(0)' &&
+          (href.indexOf('view=') !== -1 || href.indexOf('?') === 0)) {
+          e.preventDefault();
+          loadView(href);
+          return false;
+        }
+      });
+
+      // Handle browser back/forward buttons
+      window.addEventListener('popstate', function (event) {
+        console.log('[SERC Navigation] Browser navigation detected');
+        if (event.state && event.state.view) {
+          loadView(window.location.href);
         }
       });
     }

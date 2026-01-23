@@ -1019,6 +1019,46 @@ function serc_render_dashboard_page()
     }
 }
 
+/**
+ * AJAX handler to load dashboard views dynamically
+ */
+function serc_load_dashboard_view()
+{
+    // Get view parameter
+    $view = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'dashboard';
+    $type = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
+    $integration = isset($_GET['integration']) ? sanitize_text_field($_GET['integration']) : '';
+
+    // Start output buffering
+    ob_start();
+
+    // Map views to files
+    switch ($view) {
+        case 'history':
+            include plugin_dir_path(__FILE__) . 'history-view.php';
+            break;
+        case 'query':
+            include plugin_dir_path(__FILE__) . 'query-form.php';
+            break;
+        case 'category':
+            include plugin_dir_path(__FILE__) . 'category-view.php';
+            break;
+        case 'dashboard':
+        default:
+            include plugin_dir_path(__FILE__) . 'dashboard.php';
+            break;
+    }
+
+    // Get the content
+    $content = ob_get_clean();
+
+    // Return JSON response
+    wp_send_json_success(array(
+        'html' => $content,
+        'view' => $view
+    ));
+}
+
 
 function serc_shortcodes_page()
 {
