@@ -1,33 +1,46 @@
 <?php
 /**
  * View: Query Form (Dynamic query execution page)
+ * Supports both full page load and AJAX partial loading
  */
 if (!defined('ABSPATH'))
     exit;
 
-include plugin_dir_path(__FILE__) . 'includes/header.php';
-include plugin_dir_path(__FILE__) . 'includes/sidebar.php';
+// Check if this is an AJAX request (set by serc_load_dashboard_view)
+global $serc_ajax_request;
+$is_ajax = !empty($serc_ajax_request);
+
+// Only include header/sidebar for full page loads
+if (!$is_ajax) {
+    include plugin_dir_path(__FILE__) . 'includes/header.php';
+    include plugin_dir_path(__FILE__) . 'includes/sidebar.php';
+}
 require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
 
 // Get integration from URL parameter
 $integration_id = $_GET['integration'] ?? '';
 $integration = serc_get_integration_by_id($integration_id);
 
-// Redirect if integration not found
+// Handle if integration not found
 if (!$integration) {
-    header('Location: ?p=dashboard');
-    exit;
+    if (!$is_ajax) {
+        header('Location: ?p=dashboard');
+        exit;
+    }
+    echo '<div class="error-message">Integração não encontrada.</div>';
+    return;
+}
+
+if (!$is_ajax) {
+    echo '<div class="area-content">';
 }
 ?>
-
-<!-- MAIN CONTENT -->
-<div class="area-content">
 
     <div class="query-container">
         <div class="query-header">
             <div class="query-breadcrumb">
-                <a href="<?php echo admin_url('admin.php?page=serc-dashboard'); ?>">Dashboard</a> /
-                <a href="<?php echo admin_url('admin.php?page=serc-dashboard&view=category&type=' . esc_attr($integration_id)); ?>">Consultas</a> /
+                <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>">Dashboard</a> /
+                <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => $integration_id]); ?>">Consultas</a> /
                 <?php echo esc_html($integration['name']); ?>
             </div>
 
@@ -101,8 +114,7 @@ if (!$integration) {
 
     <!-- Category Sidebar for Quick Navigation -->
     <?php include plugin_dir_path(__FILE__) . 'includes/category-sidebar.php'; ?>
+<?php if (!$is_ajax): ?>
 </div>
 </div>
-
-
-<?php // No footer needed for admin partial ?>
+<?php endif; ?>

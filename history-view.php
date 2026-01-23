@@ -1,18 +1,28 @@
 <?php
 /**
  * View: History
+ * Supports both full page load and AJAX partial loading
  */
 if (!defined('ABSPATH'))
     exit;
 
-include plugin_dir_path(__FILE__) . 'includes/header.php';
-include plugin_dir_path(__FILE__) . 'includes/sidebar.php';
+// Check if this is an AJAX request (set by serc_load_dashboard_view)
+global $serc_ajax_request;
+$is_ajax = !empty($serc_ajax_request);
+
+// Only include header/sidebar for full page loads
+if (!$is_ajax) {
+    include plugin_dir_path(__FILE__) . 'includes/header.php';
+    include plugin_dir_path(__FILE__) . 'includes/sidebar.php';
+}
 
 // Fetch real history data from WordPress
 $uid = get_current_user_id();
 if (!$uid) {
     echo '<p>Faça login para visualizar o histórico.</p>';
-    exit;
+    if (!$is_ajax)
+        exit;
+    return;
 }
 
 $paged = isset($_GET['pg']) ? max(1, intval($_GET['pg'])) : 1;
@@ -69,132 +79,131 @@ if ($query->have_posts()) {
     wp_reset_postdata();
 }
 
-
+if (!$is_ajax) {
+    echo '<div class="area-content">';
+}
 ?>
 
-<!-- MAIN CONTENT -->
-<div class="area-content">
+<div class="history-container">
+    <div class="history-header">
+        <h2>
+            <i class="ph-duotone ph-clock-counter-clockwise"></i>
+            Histórico de Consultas
+        </h2>
+    </div>
 
-    <div class="history-container">
-        <div class="history-header">
-            <h2>
-                <i class="ph-duotone ph-clock-counter-clockwise"></i>
-                Histórico de Consultas
-            </h2>
+    <form method="get" class="filter-form">
+        <input type="hidden" name="p" value="history">
+
+        <div class="filter-group">
+            <label>Data Início</label>
+            <input type="date" name="de" class="filter-input" value="<?php echo esc_attr($de); ?>">
         </div>
 
-        <form method="get" class="filter-form">
-            <input type="hidden" name="p" value="history">
+        <div class="filter-group">
+            <label>Data Fim</label>
+            <input type="date" name="ate" class="filter-input" value="<?php echo esc_attr($ate); ?>">
+        </div>
 
-            <div class="filter-group">
-                <label>Data Início</label>
-                <input type="date" name="de" class="filter-input" value="<?php echo esc_attr($de); ?>">
-            </div>
+        <div class="filter-group">
+            <label>Tipo de Consulta</label>
+            <select name="tipo" class="filter-input">
+                <option value="">Todos os tipos</option>
+                <option value="cpf" <?php echo ($type === 'cpf') ? 'selected' : ''; ?>>Pessoa Física (CPF)</option>
+                <option value="cnpj" <?php echo ($type === 'cnpj') ? 'selected' : ''; ?>>Pessoa Jurídica (CNPJ)
+                </option>
+                <option value="veicular" <?php echo ($type === 'veicular') ? 'selected' : ''; ?>>Veicular</option>
+            </select>
+        </div>
 
-            <div class="filter-group">
-                <label>Data Fim</label>
-                <input type="date" name="ate" class="filter-input" value="<?php echo esc_attr($ate); ?>">
-            </div>
+        <button type="submit" class="filter-btn">
+            <i class="ph-bold ph-funnel"></i> Filtrar
+        </button>
+    </form>
 
-            <div class="filter-group">
-                <label>Tipo de Consulta</label>
-                <select name="tipo" class="filter-input">
-                    <option value="">Todos os tipos</option>
-                    <option value="cpf" <?php echo ($type === 'cpf') ? 'selected' : ''; ?>>Pessoa Física (CPF)</option>
-                    <option value="cnpj" <?php echo ($type === 'cnpj') ? 'selected' : ''; ?>>Pessoa Jurídica (CNPJ)
-                    </option>
-                    <option value="veicular" <?php echo ($type === 'veicular') ? 'selected' : ''; ?>>Veicular</option>
-                </select>
-            </div>
-
-            <button type="submit" class="filter-btn">
-                <i class="ph-bold ph-funnel"></i> Filtrar
-            </button>
-        </form>
-
-        <table class="history-table">
-            <thead>
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>Data/Hora</th>
+                <th>Tipo de Consulta</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($consultas)): ?>
                 <tr>
-                    <th>Data/Hora</th>
-                    <th>Tipo de Consulta</th>
-                    <th>Status</th>
-                    <th>Ações</th>
+                    <td colspan="4" class="empty-state">
+                        <i class="ph-duotone ph-magnifying-glass"
+                            style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
+                        Nenhuma consulta encontrada no histórico.
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($consultas)): ?>
+            <?php else: ?>
+                <?php foreach ($consultas as $consulta): ?>
                     <tr>
-                        <td colspan="4" class="empty-state">
-                            <i class="ph-duotone ph-magnifying-glass"
-                                style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
-                            Nenhuma consulta encontrada no histórico.
+                        <td>
+                            <div style="font-weight: 500;">
+                                <?php echo date('d/m/Y', strtotime($consulta['date'])); ?>
+                            </div>
+                            <div style="font-size: 12px; color: #888;">
+                                <?php echo date('H:i', strtotime($consulta['date'])); ?>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>
+                                <?php echo esc_html($consulta['type']); ?>
+                            </strong>
+                            <div style="font-size: 12px; color: #888;">ID: #
+                                <?php echo esc_html($consulta['ID']); ?>
+                            </div>
+                        </td>
+                        <td>
+                            <?php
+                            $statusClass = (stripos($consulta['status'], 'concluído') !== false) ? 'status-success' : 'status-pending';
+                            $statusIcon = (stripos($consulta['status'], 'concluído') !== false) ? 'ph-check-circle' : 'ph-hourglass';
+                            ?>
+                            <span class="status-badge <?php echo $statusClass; ?>">
+                                <i class="ph-fill <?php echo $statusIcon; ?>" style="margin-right: 4px;"></i>
+                                <?php echo esc_html($consulta['status']); ?>
+                            </span>
+                        </td>
+                        <td>
+                            <?php if (!empty($consulta['filename'])): ?>
+                                <a href="#" class="action-btn">
+                                    <i class="ph-bold ph-download-simple"></i>
+                                    Download PDF
+                                </a>
+                            <?php else: ?>
+                                <span style="color: #999; font-size: 13px;">
+                                    Processando...
+                                </span>
+                            <?php endif; ?>
                         </td>
                     </tr>
-                <?php else: ?>
-                    <?php foreach ($consultas as $consulta): ?>
-                        <tr>
-                            <td>
-                                <div style="font-weight: 500;">
-                                    <?php echo date('d/m/Y', strtotime($consulta['date'])); ?>
-                                </div>
-                                <div style="font-size: 12px; color: #888;">
-                                    <?php echo date('H:i', strtotime($consulta['date'])); ?>
-                                </div>
-                            </td>
-                            <td>
-                                <strong>
-                                    <?php echo esc_html($consulta['type']); ?>
-                                </strong>
-                                <div style="font-size: 12px; color: #888;">ID: #
-                                    <?php echo esc_html($consulta['ID']); ?>
-                                </div>
-                            </td>
-                            <td>
-                                <?php
-                                $statusClass = (stripos($consulta['status'], 'concluído') !== false) ? 'status-success' : 'status-pending';
-                                $statusIcon = (stripos($consulta['status'], 'concluído') !== false) ? 'ph-check-circle' : 'ph-hourglass';
-                                ?>
-                                <span class="status-badge <?php echo $statusClass; ?>">
-                                    <i class="ph-fill <?php echo $statusIcon; ?>" style="margin-right: 4px;"></i>
-                                    <?php echo esc_html($consulta['status']); ?>
-                                </span>
-                            </td>
-                            <td>
-                                <?php if (!empty($consulta['filename'])): ?>
-                                    <a href="#" class="action-btn">
-                                        <i class="ph-bold ph-download-simple"></i>
-                                        Download PDF
-                                    </a>
-                                <?php else: ?>
-                                    <span style="color: #999; font-size: 13px;">
-                                        Processando...
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
 
-        <!-- Mock Pagination (Visual Only) -->
-        <?php if (!empty($consultas)): ?>
-            <div style="display: flex; justify-content: center; margin-top: 25px; gap: 10px;">
-                <button class="filter-btn" style="background: #eee; color: #999; cursor: not-allowed;" disabled>
-                    <i class="ph-bold ph-caret-left"></i> Anterior
-                </button>
-                <button class="filter-btn" style="background: var(--primary-green);">
-                    1
-                </button>
-                <button class="filter-btn" style="background: #fff; color: #555; border: 1px solid #ddd;">
-                    2
-                </button>
-                <button class="filter-btn" style="background: #fff; color: #555; border: 1px solid #ddd;">
-                    Próximo <i class="ph-bold ph-caret-right"></i>
-                </button>
-            </div>
-        <?php endif; ?>
-    </div>
+    <!-- Mock Pagination (Visual Only) -->
+    <?php if (!empty($consultas)): ?>
+        <div style="display: flex; justify-content: center; margin-top: 25px; gap: 10px;">
+            <button class="filter-btn" style="background: #eee; color: #999; cursor: not-allowed;" disabled>
+                <i class="ph-bold ph-caret-left"></i> Anterior
+            </button>
+            <button class="filter-btn" style="background: var(--primary-green);">
+                1
+            </button>
+            <button class="filter-btn" style="background: #fff; color: #555; border: 1px solid #ddd;">
+                2
+            </button>
+            <button class="filter-btn" style="background: #fff; color: #555; border: 1px solid #ddd;">
+                Próximo <i class="ph-bold ph-caret-right"></i>
+            </button>
+        </div>
+    <?php endif; ?>
 </div>
-
-<?php // No footer needed for admin partial ?>
+<?php if (!$is_ajax): ?>
+    </div>
+<?php endif; ?>
