@@ -999,3 +999,16 @@ body,
     font-weight: 600;
     margin: 0 0 15px 0;
 }
+/* WordPress Admin Bar Compatibility */
+body.admin-bar .dashboard-wrapper {
+    min-height: calc(100vh - 32px);
+    position: relative;
+    top: 0;
+}
+
+@media screen and (max-width: 782px) {
+    body.admin-bar .dashboard-wrapper {
+        min-height: calc(100vh - 46px);
+        margin-top: 0; /* WordPress adds margin to html, not body usually, but safe to reset */
+    }
+}
