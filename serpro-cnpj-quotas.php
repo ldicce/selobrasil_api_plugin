@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'SERCNPJ_NONCE', 'serpro_cnpj_nonce' );
 add_action( 'wp_enqueue_scripts', 'serc_frontend_assets' );
+add_action( 'admin_enqueue_scripts', 'serc_frontend_assets' );
 add_action( 'admin_menu', 'serc_add_admin_menu' );
 
 /* Campos WooCommerce no produto */
