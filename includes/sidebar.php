@@ -1,0 +1,56 @@
+<?php
+if (!defined('ABSPATH'))
+    exit;
+
+// Helper to check active state (simple version)
+$current_page = $_GET['p'] ?? 'dashboard';
+?>
+<!-- SIDEBAR -->
+<div class="area-sidebar">
+    <ul class="nav-menu">
+        <li class="nav-item">
+            <a href="?p=dashboard" class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
+                <i class="ph-fill ph-house"></i> Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="?p=consulta" class="nav-link <?php echo $current_page === 'consulta' ? 'active' : ''; ?>">
+                <i class="ph-bold ph-magnifying-glass"></i> Consultas
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="?p=history" class="nav-link <?php echo $current_page === 'history' ? 'active' : ''; ?>">
+                <i class="ph-duotone ph-clock-counter-clockwise"></i> Histórico
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="ph-fill ph-wrench"></i> Ferramentas
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="ph-fill ph-chart-bar"></i> Relatórios
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="ph-fill ph-folder"></i> Armazenamento
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="ph-fill ph-file-text"></i> Documentação
+            </a>
+        </li>
+    </ul>
+
+    <div class="help-banner">
+        <div style="font-weight:bold;margin-bottom:5px;font-size:14px;">Precisar de ajuda?</div>
+        <small style="opacity:0.8;font-size:12px;">Consulte nossa página.</small>
+        <br>
+        <a href="#"
+            style="color:#2ECC40;font-size:12px;text-decoration:none;margin-top:10px;display:inline-block;border-bottom:1px solid #2ECC40;">Saiba
+            mais ↗</a>
+    </div>
+</div>

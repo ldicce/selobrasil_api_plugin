@@ -1,0 +1,208 @@
+//======================================================================
+// Generated form fields - add to integrations-config.php
+//======================================================================
+
+// bacen
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// bin_nacional
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// cadastrais_score_dividas
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// cadastrais_score_dividas_cp
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// certidao_nacional_debitos_trabalhistas
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// cpf
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// cpf_renda
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// crlv
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// dividas_bancrias_cpf
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// dossie_juridico
+'fields' => [
+    ['name' => 'document', 'label' => 'Documento', 'placeholder' => 'CPF ou CNPJ'],
+],
+
+// dossie_juridico_cpf
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// fipe
+'fields' => [
+    ['name' => 'marca', 'label' => 'Marca', 'placeholder' => 'Marca', 'required' => true],
+    ['name' => 'modelo', 'label' => 'Modelo', 'placeholder' => 'Modelo', 'required' => true],
+],
+
+// gravame
+'fields' => [
+    ['name' => 'chassi', 'label' => 'Chassi', 'placeholder' => '17 caracteres', 'pattern' => '^[A-HJ-NPR-Z0-9]{17}$'],
+],
+
+// gravame_detalhamento
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// historico_roubo_furto
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// ic_basico_score
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// ic_cnh
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// ic_nome
+'fields' => [
+    ['name' => 'name', 'label' => 'Nome completo', 'placeholder' => 'Nome completo', 'required' => true],
+],
+
+// ic_placa
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// ic_proprietario_atual
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// ic_telefone
+'fields' => [
+    ['name' => 'ddd', 'label' => 'DDD', 'placeholder' => '11', 'pattern' => '^\d{2}$', 'title' => 'DDD com 2 dígitos', 'required' => true, 'inputmode' => 'numeric'],
+    ['name' => 'telefone', 'label' => 'Telefone', 'placeholder' => '999999999', 'pattern' => '^\d{8,9}$', 'title' => 'Telefone com 8 ou 9 dígitos', 'required' => true, 'inputmode' => 'numeric'],
+],
+
+// indice_risco_veicular
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// laudo_veicular
+'fields' => [
+    ['name' => 'placa'],
+    ['name' => 'chassi'],
+],
+
+// leilao_score_perda_total
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// licenciamento_anterior
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// proprietario_placa
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// protesto_nacional_cenprot
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// quod
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// r_acoes_e_processos_judiciais
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// renainf
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// renainf_placa
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// renajud
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// scpc_boa_vista
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// scpc_bv_plus_v2
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// scr_bacen_score
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// serasa_premium
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// sinistro
+'fields' => [
+    ['name' => 'placa', 'label' => 'Placa', 'placeholder' => 'ABC1D23 ou ABC-1234'],
+],
+
+// spc_brasil_cenprot
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// spc_brasil_serasa
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// srs_premium
+'fields' => [
+    ['name' => 'cpf', 'label' => 'CPF', 'placeholder' => '000.000.000-00'],
+],
+
+// Total types with fields: 40
