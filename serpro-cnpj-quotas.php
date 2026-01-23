@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: API Full - Consultas
+Plugin Name: Selo Brasil - Consultas
 Description: Define cotas fixas automaticamente sempre que um pedido é criado com status Concluído.
 Version: 1.24
 Author: Selo Brasil
