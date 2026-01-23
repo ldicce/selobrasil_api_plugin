@@ -248,4 +248,24 @@ jQuery(function ($) {
     }
   }
 
+  // Frontend Dashboard Navigation Handler
+  // When using [serc_dashboard] shortcode, we need to reload the page
+  // when navigation links are clicked so WordPress re-processes the shortcode
+  $(document).ready(function () {
+    // Only run if we're on a page with dashboard content
+    if ($('.dashboard-wrapper').length > 0) {
+      // Intercept clicks on dashboard navigation links
+      $(document).on('click', 'a[href*="view="]', function (e) {
+        var href = $(this).attr('href');
+
+        // Check if this is a relative URL (starts with ?) or contains current page
+        if (href && (href.indexOf('?') === 0 || href.indexOf(window.location.pathname) !== -1)) {
+          // Let the browser navigate normally, which will reload the page
+          // This ensures WordPress re-processes the shortcode with new parameters
+          return true;
+        }
+      });
+    }
+  });
+
 });

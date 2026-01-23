@@ -17,6 +17,11 @@ if (!defined('ABSPATH'))
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
 
+    <!-- Dashboard Navigation Script -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script
+        src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>"></script>
+
     <!-- LOGO AREA -->
     <div class="area-logo">
         <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>"

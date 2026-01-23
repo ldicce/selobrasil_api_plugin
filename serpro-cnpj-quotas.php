@@ -2,7 +2,7 @@
 /*
 Plugin Name: Selo Brasil - Consultas
 Description: Define cotas fixas automaticamente sempre que um pedido é criado com status Concluído.
-Version: 1.31
+Version: 1.32
 Author: Selo Brasil
 */
 
@@ -43,6 +43,8 @@ add_action('woocommerce_save_product_variation', 'serc_wc_save_variation_field',
 add_action('wp_ajax_serc_lookup_cnpj', 'serc_lookup_cnpj');
 add_action('wp_ajax_nopriv_serc_lookup_cnpj', 'serc_lookup_cnpj');
 add_action('wp_ajax_serc_lookup', 'serc_lookup');
+add_action('wp_ajax_serc_load_view', 'serc_load_dashboard_view');
+add_action('wp_ajax_nopriv_serc_load_view', 'serc_load_dashboard_view');
 add_action('wp_ajax_nopriv_serc_lookup', 'serc_lookup');
 add_action('wp_ajax_serc_upload', 'serc_upload');
 
@@ -998,9 +1000,6 @@ function serc_render_dashboard_page()
 {
     // Basic router based on 'view' parameter
     $view = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'dashboard';
-
-    // DEBUG LOG
-    error_log("[SERC DEBUG] serc_render_dashboard_page called. GET view: " . ($_GET['view'] ?? 'NULL') . ", Final view: " . $view);
 
     // Map views to files
     switch ($view) {
