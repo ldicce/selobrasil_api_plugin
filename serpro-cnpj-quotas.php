@@ -83,8 +83,8 @@ add_shortcode( 'serc_credit_balance', 'serc_credit_balance_shortcode' );
    ========================= */
 function serc_frontend_assets() {
     // jQuery Mask for CPF/CNPJ formatting
-    wp_enqueue_script( 'jquery-mask', plugin_dir_url(__FILE__) . 'jQuery-Mask-Plugin-master/dist/jquery.mask.min.js', array('jquery'), '1.14.16', true );
-    wp_enqueue_script( 'serc-frontend', plugin_dir_url(__FILE__) . 'serc-frontend.js', array('jquery','jquery-mask'), '1.23', true );
+    wp_enqueue_script( 'jquery-mask', plugins_url( 'jQuery-Mask-Plugin-master/dist/jquery.mask.min.js', __FILE__ ), array('jquery'), '1.14.16', true );
+    wp_enqueue_script( 'serc-frontend', plugins_url( 'serc-frontend.js', __FILE__ ), array('jquery','jquery-mask'), '1.23', true );
     
     // External Assets (Google Fonts & Phosphor Icons)
     wp_enqueue_style( 'serc-google-fonts', 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap', array(), null );
@@ -92,7 +92,7 @@ function serc_frontend_assets() {
 
     
     // Main Dashboard Styles
-    wp_enqueue_style( 'serc-dashboard-style', plugin_dir_url(__FILE__) . 'assets/css/style.css', array(), '1.0' );
+    wp_enqueue_style( 'serc-dashboard-style', plugins_url( 'assets/css/style.css', __FILE__ ), array(), '1.25' );
 
     wp_localize_script( 'serc-frontend', 'serc_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
