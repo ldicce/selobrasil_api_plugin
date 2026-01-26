@@ -2,7 +2,7 @@
 /*
 Plugin Name: Selo Brasil - Consultas
 Description: Define cotas fixas automaticamente sempre que um pedido é criado com status Concluído.
-Version: 1.39
+Version: 1.40
 Author: Selo Brasil
 */
 
@@ -80,7 +80,7 @@ function serc_frontend_assets()
 {
     // jQuery Mask for CPF/CNPJ formatting
     wp_enqueue_script('jquery-mask', plugins_url('jQuery-Mask-Plugin-master/dist/jquery.mask.min.js', __FILE__), array('jquery'), '1.14.16', true);
-    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '1.38', true);
+    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '1.40', true);
 
     // External Assets (Google Fonts & Phosphor Icons)
     wp_enqueue_style('serc-google-fonts', 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap', array(), null);
@@ -88,7 +88,7 @@ function serc_frontend_assets()
 
 
     // Main Dashboard Styles
-    wp_enqueue_style('serc-dashboard-style', plugins_url('assets/css/style.css', __FILE__), array(), '1.35');
+    wp_enqueue_style('serc-dashboard-style', plugins_url('assets/css/style.css', __FILE__), array(), '1.40');
 
     wp_localize_script('serc-frontend', 'serc_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),

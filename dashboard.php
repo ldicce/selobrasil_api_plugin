@@ -119,6 +119,28 @@ if (!$is_ajax) {
     </div>
 </div>
 
+<!-- Mobile Bottom Navigation -->
+<div class="mobile-bottom-nav">
+    <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" 
+       class="mobile-nav-item <?php echo (!isset($_GET['view']) || $_GET['view'] === 'dashboard') ? 'active' : ''; ?>">
+        <i class="ph-fill ph-house"></i>
+        <span>Início</span>
+    </a>
+    <a href="<?php echo serc_get_dashboard_url(['view' => 'category']); ?>" 
+       class="mobile-nav-item <?php echo (isset($_GET['view']) && ($_GET['view'] === 'category' || $_GET['view'] === 'query')) ? 'active' : ''; ?>">
+        <i class="ph-bold ph-magnifying-glass"></i>
+        <span>Consultas</span>
+    </a>
+    <a href="https://wa.me/5511999999999" target="_blank" class="mobile-nav-item">
+        <i class="ph-fill ph-whatsapp-logo"></i>
+        <span>Suporte</span>
+    </a>
+    <a href="#" class="mobile-nav-item">
+        <i class="ph-fill ph-user"></i>
+        <span>Conta</span>
+    </a>
+</div>
+
 <?php if (!$is_ajax): ?>
     </div>
     </div>

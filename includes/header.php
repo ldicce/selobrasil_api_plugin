@@ -29,7 +29,7 @@ if (!defined('ABSPATH'))
         };
     </script>
     <script
-        src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>?v=1.35"></script>
+        src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>?v=1.40"></script>
 
     <!-- LOGO AREA -->
     <div class="area-logo">
@@ -45,6 +45,13 @@ if (!defined('ABSPATH'))
         <div class="header-left">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" class="dashboard-crumb">
                 <i class="ph-fill ph-squares-four"></i> Dashboard
+            </a>
+            <!-- Mobile Logo (Visible only on mobile) -->
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" class="mobile-logo"
+                style="display:none; align-items:center; gap:8px; text-decoration:none; color:#1a1a1a; font-weight:700; font-size:18px;">
+                <img src="<?php echo plugins_url('assets/img/LOGO.svg', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>"
+                    alt="Selo Brasil" style="height: 32px;">
+                <span style="color:var(--primary-green);">Selo Brasil</span>
             </a>
             <div class="global-search">
                 <i class="ph ph-magnifying-glass"></i>

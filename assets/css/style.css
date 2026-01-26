@@ -794,6 +794,303 @@ body,
     background: #fff;
 }
 
+/* ... existing styles ... */
+
+/* MOBILE RESPONSIVENESS */
+@media (max-width: 768px) {
+
+    /* Main Layout */
+    .dashboard-wrapper {
+        display: block;
+        /* Stack everything */
+        height: auto;
+        min-height: 100vh;
+        padding-bottom: 80px;
+        /* Space for bottom nav */
+    }
+
+    /* Hide Desktop Sidebar */
+    .area-sidebar {
+        display: none !important;
+    }
+
+    /* Header Adjustments */
+    .area-header {
+        padding: 15px 20px;
+        height: auto;
+        flex-direction: column;
+        gap: 15px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .header-left {
+        width: 100%;
+        justify-content: space-between;
+        gap: 15px;
+    }
+
+    /* Hide Breadcrumb text on mobile if needed, or adjust */
+    .dashboard-crumb {
+        display: none;
+    }
+
+    .mobile-logo {
+        display: flex !important;
+        grid-area: logo;
+        /* Assign to the logo area in our new mobile grid */
+    }
+
+    /* Make Logo visible in header if we move it there, 
+       but currently it's in .area-logo which is grid area 'logo'.
+       We need to handle .area-logo visibility.
+    */
+    .area-logo {
+        display: none;
+        /* We might want to move logo to header-left for mobile */
+    }
+
+    /* Re-structure Header for Mobile: Logo Left, Credits Right, Search Below */
+    .area-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "logo credits"
+            "search search";
+        align-items: center;
+        padding: 15px;
+    }
+
+    /* We need to inject the logo into the header or make .area-logo part of the flow.
+       Since HTML structure is fixed, we might need a mobile-only logo in the header
+       or adjust the grid areas. 
+       Let's try to simulate the structure:
+    */
+
+    /* Reset areas for mobile block layout */
+    .area-logo,
+    .area-header,
+    .area-sidebar,
+    .area-content {
+        grid-area: auto;
+    }
+
+    /* Force display:none on the separate logo area container to avoid duplication if we add one,
+       OR style it to be the top bar. 
+       Current HTML: .area-logo is separate. 
+       Let's hide .area-logo and put a logo inside .area-header via JS or PHP, 
+       OR just style .area-logo and .area-header to stack correctly.
+    */
+    .area-logo {
+        display: flex;
+        position: absolute;
+        /* Hacky? No, let's just use flex order or display */
+        border: none;
+        padding: 10px 20px;
+        width: auto;
+        height: 60px;
+        z-index: 101;
+    }
+
+    /* Actually, better approach: 
+       Hide .area-logo.
+       Show a mobile logo inside .header-left.
+    */
+    .area-logo {
+        display: none;
+    }
+
+    .header-left {
+        flex-direction: column;
+        /* Search below */
+        align-items: flex-start;
+        display: contents;
+        /* Let children flow in grid */
+    }
+
+    /* Global Search - Full Width below */
+    .global-search {
+        grid-area: search;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .global-search input {
+        width: 100%;
+        background: #F3F4F6;
+        border: none;
+        padding: 12px 15px 12px 40px;
+        border-radius: 8px;
+        /* Softer radius */
+    }
+
+    /* Header Right - Credits */
+    .header-right {
+        grid-area: credits;
+        gap: 10px;
+    }
+
+    .user-avatar {
+        display: none;
+        /* Hide avatar on mobile to save space? Image shows credits. */
+    }
+
+    .credits-capsule {
+        background: #F0FDF4;
+        /* Light green */
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    /* Content Area */
+    .area-content {
+        display: block;
+        /* Stack columns */
+        padding: 20px;
+    }
+
+    /* Action Grid - Horizontal Scroll or 2x2? 
+       Image shows visual: [Icon] [Text] 
+       It seems like a horizontal list of circular buttons.
+       "Dados", "Dívidas", "Jurídico", "Veicular"
+    */
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 25px;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        /* Scrollbar space if needed */
+    }
+
+    /* Modify action cards to be circular/vertical */
+    .action-card {
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        width: auto;
+        height: auto;
+        padding: 10px 5px;
+        background: transparent !important;
+        /* Remove card bg */
+        box-shadow: none;
+        gap: 8px;
+    }
+
+    .action-card i {
+        background: #E6F7EF;
+        /* Green circle bg */
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: var(--primary-green);
+        margin-bottom: 5px;
+    }
+
+    /* Special colors for specific icons if needed */
+    /* .action-card:nth-child(2) i { color: ... } */
+
+    /* Stats Grid */
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        /* 2 columns like image */
+        gap: 15px;
+    }
+
+    .stat-card {
+        padding: 15px;
+        border-radius: 16px;
+        /* Increased radius */
+        box-shadow: none;
+        border: 1px solid #F0F0F0;
+    }
+
+    .stat-title {
+        font-size: 13px;
+        color: #1a1a1a;
+        font-weight: 700;
+        /* Bolder */
+    }
+
+    .stat-value {
+        font-size: 20px;
+        margin-top: 5px;
+    }
+
+    .btn-buy-credits {
+        width: 100%;
+        justify-content: center;
+        font-size: 12px;
+        padding: 8px;
+        margin-top: 10px;
+    }
+
+    /* Favorites Grid */
+    .fav-grid {
+        grid-template-columns: 1fr 1fr;
+        /* 2 cols */
+    }
+
+    .fav-card {
+        font-size: 12px;
+        justify-content: space-between;
+    }
+
+    /* Right Sidebar (Activity) - Move below */
+    .right-sidebar {
+        margin-top: 30px;
+    }
+
+    /* Bottom Navigation */
+    .mobile-bottom-nav {
+        display: flex;
+        /* Show on mobile */
+    }
+}
+
+/* Bottom Navigation - Hidden on Desktop */
+.mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #eee;
+    height: 70px;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 999;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #9CA3AF;
+    /* Gray */
+    text-decoration: none;
+    font-size: 11px;
+    gap: 4px;
+    font-weight: 500;
+}
+
+.mobile-nav-item i {
+    font-size: 24px;
+}
+
+.mobile-nav-item.active {
+    color: var(--primary-green);
+}
+
 .form-wrapper input:focus,
 .form-wrapper select:focus,
 .form-wrapper textarea:focus {
@@ -999,6 +1296,7 @@ body,
     font-weight: 600;
     margin: 0 0 15px 0;
 }
+
 /* WordPress Admin Bar Compatibility */
 body.admin-bar .dashboard-wrapper {
     min-height: calc(100vh - 32px);
@@ -1009,6 +1307,7 @@ body.admin-bar .dashboard-wrapper {
 @media screen and (max-width: 782px) {
     body.admin-bar .dashboard-wrapper {
         min-height: calc(100vh - 46px);
-        margin-top: 0; /* WordPress adds margin to html, not body usually, but safe to reset */
+        margin-top: 0;
+        /* WordPress adds margin to html, not body usually, but safe to reset */
     }
 }
