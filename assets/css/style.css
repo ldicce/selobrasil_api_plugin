@@ -951,34 +951,106 @@ body,
         padding: 20px;
     }
 
-    /* Action Grid - Horizontal Scroll or 2x2? 
-       Image shows visual: [Icon] [Text] 
-       It seems like a horizontal list of circular buttons.
-       "Dados", "Dívidas", "Jurídico", "Veicular"
-    */
+    /* Action Grid - Horizontal Scroll */
     .action-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        margin-bottom: 25px;
+        display: flex;
+        /* Use flex for true horizontal scroll */
+        flex-wrap: nowrap;
         overflow-x: auto;
-        padding-bottom: 5px;
-        /* Scrollbar space if needed */
+        gap: 15px;
+        padding-bottom: 10px;
+        margin-bottom: 25px;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
     }
 
-    /* Modify action cards to be circular/vertical */
     .action-card {
-        flex-direction: column;
-        justify-content: center;
-        text-align: center;
-        width: auto;
-        height: auto;
+        flex: 0 0 auto;
+        /* Don't shrink */
+        width: 100px;
+        /* Fixed width for better scroll target */
+        scroll-snap-align: start;
         padding: 10px 5px;
-        background: transparent !important;
-        /* Remove card bg */
-        box-shadow: none;
-        gap: 8px;
+        font-size: 11px;
     }
+
+    /* Integration Tables / Lists - Make scrollable */
+    .history-table,
+    .integration-table,
+    .integration-header,
+    .integration-row {
+        min-width: 600px;
+        /* Force width to trigger scroll */
+    }
+
+    /* Wrap tables in a scroll container if not already
+       (We might need to add this wrapper via JS or PHP,
+        but for now let's try to make the containers scrollable)
+    */
+    .history-container,
+    .integration-table {
+        overflow-x: auto;
+        display: block;
+        /* Ensure it behaves as a block for styling */
+    }
+
+    /* Adjust Integration Row for Mobile if we want stacking instead of scrolling */
+    /* Alternatively, stack them for better UX */
+    .integration-header {
+        display: none;
+        /* Hide headers on mobile */
+    }
+
+    .integration-row {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        /* Reset width */
+        width: 100%;
+        padding: 15px;
+        gap: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .integration-info {
+        width: 100%;
+    }
+
+    /* Re-arrange grid columns for the row items */
+    .integration-table .integration-row>div {
+        /* This selects the direct children of the grid-turned-flex row */
+        text-align: left;
+    }
+
+    /* Sidebar Items (Category Sidebar) */
+    .sidebar-item-desc {
+        -webkit-line-clamp: 2;
+    }
+
+    /* Category View Mobile Adjustments */
+    .category-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .btn-consultar-green {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .category-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 5px;
+    }
+
+    .category-tab {
+        flex-shrink: 0;
+    }
+
+    /* Remove previous grid definition for integration-row inside media query if it conflicts */
+
 
     .action-card i {
         background: #E6F7EF;
