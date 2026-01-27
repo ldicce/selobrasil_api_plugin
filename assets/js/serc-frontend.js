@@ -255,7 +255,7 @@ jQuery(function ($) {
 
       console.log('[SERC Navigation] Dashboard detected, AJAX navigation enabled');
 
-      // Function to update main sidebar active state
+      // Function to update main sidebar and mobile nav active state
       function updateSidebarActiveState(view) {
         // Map views to sidebar link selectors
         var viewMap = {
@@ -268,11 +268,11 @@ jQuery(function ($) {
 
         var targetView = viewMap[view] || 'dashboard';
 
-        // Remove active from all nav links
-        $('.nav-menu .nav-link').removeClass('active');
+        // Remove active from all nav links and mobile nav items
+        $('.nav-menu .nav-link, .mobile-nav-item').removeClass('active');
 
         // Add active to correct link based on view
-        $('.nav-menu .nav-link').each(function () {
+        $('.nav-menu .nav-link, .mobile-nav-item').each(function () {
           var href = $(this).attr('href') || '';
 
           // Skip placeholder links (href="#" or empty)
@@ -352,7 +352,7 @@ jQuery(function ($) {
       }
 
       // Intercept navigation clicks
-      $(document).on('click', 'a[href*="view="], .nav-link[href*="?"], .sidebar-tab[href*="?"], .action-card[href*="?"]', function (e) {
+      $(document).on('click', 'a[href*="view="], .nav-link[href*="?"], .sidebar-tab[href*="?"], .action-card[href*="?"], .mobile-nav-item[href*="?"]', function (e) {
         var href = $(this).attr('href');
 
         console.log('[SERC Navigation] Link clicked:', href);

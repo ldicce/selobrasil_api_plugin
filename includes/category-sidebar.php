@@ -43,12 +43,8 @@ $category_labels = [
 
 
 <div class="sidebar-wrapper">
-    <div class="sidebar-search">
-        <div class="search-box">
-            <i class="ph-magnifying-glass"></i>
-            <input type="text" id="sidebar-search-input" placeholder="Buscar consulta..."
-                onkeyup="filterSidebarItems(this.value)">
-        </div>
+    <div class="sidebar-title" style="margin-bottom: 15px;">
+        <h3 style="font-size: 16px; font-weight: 600; color: #333; margin: 0;">Outras consultas</h3>
     </div>
 
     <div class="sidebar-tabs">
@@ -58,6 +54,14 @@ $category_labels = [
                 <?php echo $label; ?>
             </button>
         <?php endforeach; ?>
+    </div>
+
+    <div class="sidebar-search">
+        <div class="search-box">
+            <i class="ph-magnifying-glass"></i>
+            <input type="text" id="sidebar-search-input" placeholder="Buscar consulta..."
+                onkeyup="filterSidebarItems(this.value)">
+        </div>
     </div>
 
     <div class="sidebar-content">

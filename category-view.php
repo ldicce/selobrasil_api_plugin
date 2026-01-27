@@ -88,7 +88,6 @@ if (empty($category)) {
 
             <div class="category-tabs">
                 <button class="category-tab active">Categorias</button>
-                <button class="category-tab">Lista completa</button>
             </div>
         </div>
 
@@ -133,7 +132,7 @@ if (empty($category)) {
             <?php endforeach; ?>
         </div>
     </div>
-<?php
+    <?php
 } // End if/else category check
 
 if (!$is_ajax): ?>

@@ -24,24 +24,22 @@ if (!$is_ajax) {
         <h2 class="welcome-title">O que você quer fazer agora?</h2>
 
         <div class="action-grid">
-            <div class="action-grid">
-                <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'cpf']); ?>"
-                    class="action-card">
-                    <i class="ph ph-identification-card"></i> Consultar CPF
-                </a>
-                <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'cnpj']); ?>"
-                    class="action-card">
-                    <i class="ph ph-buildings"></i> Consultar CNPJ
-                </a>
-                <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'veicular']); ?>"
-                    class="action-card">
-                    <i class="ph ph-car"></i> Veicular
-                </a>
-                <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'juridico']); ?>"
-                    class="action-card" style="background: #f0f7f4">
-                    <i class="ph ph-scales"></i> Jurídico
-                </a>
-            </div>
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'cpf']); ?>"
+                class="action-card">
+                <i class="ph ph-identification-card"></i> Consultar CPF
+            </a>
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'cnpj']); ?>"
+                class="action-card">
+                <i class="ph ph-buildings"></i> Consultar CNPJ
+            </a>
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'veicular']); ?>"
+                class="action-card">
+                <i class="ph ph-car"></i> Veicular
+            </a>
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'juridico']); ?>"
+                class="action-card" style="background: #f0f7f4">
+                <i class="ph ph-scales"></i> Jurídico
+            </a>
         </div>
 
         <div class="stats-grid">
@@ -119,27 +117,7 @@ if (!$is_ajax) {
     </div>
 </div>
 
-<!-- Mobile Bottom Navigation -->
-<div class="mobile-bottom-nav">
-    <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" 
-       class="mobile-nav-item <?php echo (!isset($_GET['view']) || $_GET['view'] === 'dashboard') ? 'active' : ''; ?>">
-        <i class="ph-fill ph-house"></i>
-        <span>Início</span>
-    </a>
-    <a href="<?php echo serc_get_dashboard_url(['view' => 'category']); ?>" 
-       class="mobile-nav-item <?php echo (isset($_GET['view']) && ($_GET['view'] === 'category' || $_GET['view'] === 'query')) ? 'active' : ''; ?>">
-        <i class="ph-bold ph-magnifying-glass"></i>
-        <span>Consultas</span>
-    </a>
-    <a href="https://wa.me/5511999999999" target="_blank" class="mobile-nav-item">
-        <i class="ph-fill ph-whatsapp-logo"></i>
-        <span>Suporte</span>
-    </a>
-    <a href="#" class="mobile-nav-item">
-        <i class="ph-fill ph-user"></i>
-        <span>Conta</span>
-    </a>
-</div>
+
 
 <?php if (!$is_ajax): ?>
     </div>

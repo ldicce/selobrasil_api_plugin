@@ -40,7 +40,7 @@ if (!$is_ajax) {
         <div class="query-header">
             <div class="query-breadcrumb">
                 <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>">Dashboard</a> /
-                <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => $integration_id]); ?>">Consultas</a> /
+                <a href="<?php echo serc_get_dashboard_url(['view' => 'category']); ?>">Consultas</a> /
                 <?php echo esc_html($integration['name']); ?>
             </div>
 
