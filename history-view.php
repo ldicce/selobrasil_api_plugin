@@ -170,7 +170,11 @@ if (!$is_ajax) {
                         </td>
                         <td>
                             <?php if (!empty($consulta['filename'])): ?>
-                                <a href="#" class="action-btn">
+                                <?php
+                                $dl_hash = serc_consulta_ensure_hash($consulta['ID']);
+                                $dl_url = admin_url('admin-ajax.php?action=serc_download&hash=' . $dl_hash);
+                                ?>
+                                <a href="<?php echo esc_url($dl_url); ?>" class="action-btn">
                                     <i class="ph-bold ph-download-simple"></i>
                                     Download PDF
                                 </a>
