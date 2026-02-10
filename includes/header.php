@@ -30,7 +30,7 @@ if (!defined('ABSPATH'))
         };
     </script>
     <script
-        src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>?v=1.40"></script>
+        src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>?v=3.2.1"></script>
 
     <!-- LOGO AREA -->
     <div class="area-logo">
