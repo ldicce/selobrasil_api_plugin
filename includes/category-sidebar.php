@@ -59,9 +59,9 @@ $category_labels = [
     <div class="sidebar-search">
         <div class="search-box">
             <i class="ph-magnifying-glass"></i>
-            <input type="text" id="sidebar-search-input" placeholder="Buscar consulta..."
-                onkeyup="filterSidebarItems(this.value)">
+            <input type="text" class="sidebar-search-input" placeholder="Buscar consulta...">
         </div>
+        <div class="global-search-results"></div>
     </div>
 
     <div class="sidebar-content">
@@ -114,7 +114,8 @@ $category_labels = [
         });
 
         // Clear search
-        document.getElementById('sidebar-search-input').value = '';
+        var searchInput = document.querySelector('.sidebar-search-input');
+        if (searchInput) searchInput.value = '';
     }
 
     function filterSidebarItems(searchTerm) {

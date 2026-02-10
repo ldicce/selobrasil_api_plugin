@@ -80,6 +80,7 @@ if (empty($category)) {
                 <div class="category-search">
                     <i class="ph ph-magnifying-glass"></i>
                     <input type="text" placeholder="Buscar...">
+                    <div class="category-search-results"></div>
                 </div>
                 <button class="btn-consultar-green">
                     Consultar

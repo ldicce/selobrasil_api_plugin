@@ -373,7 +373,402 @@ jQuery(function ($) {
           loadView(window.location.href);
         }
       });
+      // Global AJAX Search Logic
+      var searchTimeout;
+
+      // Generic search handler function
+      function handleSearchInput(inputSelector, resultsContainerSelector, customRenderer) {
+        $(document).on('keyup focus', inputSelector, function () {
+          var $input = $(this);
+          var term = $input.val().trim();
+          var $container = $(resultsContainerSelector);
+
+          // Create container if it doesn't exist equivalent (for global header search)
+          if (resultsContainerSelector === '.global-search-results' && $container.length === 0) {
+            $container = $('<div class="global-search-results"></div>');
+            $input.parent().append($container);
+          }
+
+          // Create container if it doesn't exist (for category/sidebar search)
+          if (resultsContainerSelector === '.category-search-results' && $container.length === 0) {
+            $container = $('<div class="category-search-results"></div>');
+            $input.parent().append($container);
+          }
+
+
+          if (term.length < 2) {
+            $container.hide().empty();
+            return;
+          }
+
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(function () {
+            $container.show().html('<div class="search-loading">Buscando...</div>');
+
+            $.get(serc_ajax.ajax_url, {
+              action: 'serc_search_integrations',
+              term: term
+            }).done(function (response) {
+              if (response.success && response.data && response.data.length > 0) {
+                var html = '';
+                response.data.forEach(function (item) {
+                  html += '<a href="' + item.url + '" class="search-result-item">';
+                  html += '<i class="' + item.icon + '"></i>';
+                  html += '<div class="search-result-info">';
+                  html += '<div class="search-result-name">' + item.name + '</div>';
+                  html += '</div>';
+                  html += '</a>';
+                });
+                $container.html(html);
+              } else {
+                $container.html('<div class="search-no-results">Nenhuma consulta encontrada.</div>');
+              }
+            }).fail(function (xhr, status, error) {
+              console.error('[SERC Search] AJAX error:', status, error);
+              $container.html('<div class="search-no-results">Erro na busca. Tente novamente.</div>');
+            });
+          }, 300); // 300ms debounce
+        });
+
+        // Hide results when clicking outside
+        $(document).on('click', function (e) {
+          if (!$(e.target).closest(inputSelector).length && !$(e.target).closest(resultsContainerSelector).length) {
+            $(resultsContainerSelector).hide();
+          }
+        });
+      }
+
+      // Initialize Search handlers
+      handleSearchInput('.global-search input', '.global-search-results');
+      handleSearchInput('.category-search input', '.category-search-results');
+      handleSearchInput('.sidebar-search-input', '.sidebar-search .global-search-results'); // Sidebar search
+
+      // =============================================
+      // Favorites Management
+      // =============================================
+      initFavorites();
     }
   });
+
+  // Favorites functionality
+  var favoritesData = null;
+  var allIntegrations = {};
+  var activeCategory = null;
+
+  function initFavorites() {
+    // Create modal if doesn't exist
+    if ($('#fav-selector-modal').length === 0) {
+      createFavoriteSelectorModal();
+    }
+  }
+
+  function createFavoriteSelectorModal() {
+    var modal = `
+      <div id="fav-selector-modal" class="fav-selector-modal">
+        <div class="fav-selector-content">
+          <div class="fav-selector-header">
+            <h3>Selecionar consulta favorita</h3>
+            <button class="fav-selector-close" onclick="closeFavoriteSelector()">&times;</button>
+          </div>
+          <div class="fav-selector-search">
+            <input type="text" id="fav-selector-search" placeholder="Buscar consulta...">
+          </div>
+          <div class="fav-selector-tabs" id="fav-selector-tabs"></div>
+          <div class="fav-selector-list" id="fav-selector-list">
+            <div class="fav-selector-empty">Carregando...</div>
+          </div>
+        </div>
+      </div>
+    `;
+    $('body').append(modal);
+
+    // Close on overlay click
+    $('#fav-selector-modal').on('click', function (e) {
+      if (e.target === this) {
+        closeFavoriteSelector();
+      }
+    });
+
+    // Search filter - AJAX-based like other search inputs
+    var searchTimeout;
+    $('#fav-selector-search').on('input', function () {
+      var term = $(this).val().trim();
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(function () {
+        if (term) {
+          // Use AJAX search for better results
+          $.ajax({
+            url: serc_ajax.ajax_url,
+            type: 'POST',
+            data: {
+              action: 'serc_search_integrations',
+              term: term
+            },
+            success: function (response) {
+              if (response.success && response.data) {
+                // Flatten results from all categories
+                var results = [];
+                Object.keys(response.data).forEach(function (category) {
+                  results = results.concat(response.data[category]);
+                });
+                renderSelectorList(results);
+              }
+            }
+          });
+        } else {
+          // Show current category items when search is cleared
+          if (activeCategory && allIntegrations[activeCategory]) {
+            renderSelectorList(allIntegrations[activeCategory]);
+          }
+        }
+      }, 300);
+    });
+  }
+
+  function loadIntegrationsForSelector() {
+    // Load all integrations grouped by category
+    $.ajax({
+      url: serc_ajax.ajax_url,
+      type: 'POST',
+      data: {
+        action: 'serc_get_all_integrations'
+      },
+      success: function (response) {
+        if (response.success && response.data) {
+          allIntegrations = response.data;
+          renderCategoryTabs();
+          // Select first category
+          var categories = Object.keys(allIntegrations);
+          if (categories.length > 0) {
+            selectCategory(categories[0]);
+          }
+        }
+      },
+      error: function () {
+        // Fallback: use search integrations with empty term (returns grouped data when empty)
+        $.ajax({
+          url: serc_ajax.ajax_url,
+          type: 'POST',
+          data: {
+            action: 'serc_search_integrations',
+            term: ''
+          },
+          success: function (response) {
+            if (response.success && response.data) {
+              // serc_search_integrations returns grouped data when term is empty
+              allIntegrations = response.data;
+              renderCategoryTabs();
+              var categories = Object.keys(allIntegrations);
+              if (categories.length > 0) {
+                selectCategory(categories[0]);
+              }
+            }
+          }
+        });
+      }
+    });
+  }
+
+  function renderCategoryTabs() {
+    var $tabs = $('#fav-selector-tabs');
+    $tabs.empty();
+
+    var categories = Object.keys(allIntegrations);
+    categories.forEach(function (category) {
+      var $tab = $('<button class="fav-selector-tab" data-category="' + category + '">' + category + '</button>');
+      $tab.on('click', function () {
+        selectCategory(category);
+        $('#fav-selector-search').val('');
+      });
+      $tabs.append($tab);
+    });
+  }
+
+  function selectCategory(category) {
+    activeCategory = category;
+
+    // Update active tab
+    $('.fav-selector-tab').removeClass('active');
+    $('.fav-selector-tab[data-category="' + category + '"]').addClass('active');
+
+    // Render list
+    renderSelectorList(allIntegrations[category] || []);
+  }
+
+  function filterIntegrationsList(term) {
+    if (!term) {
+      // Show current category items
+      if (activeCategory && allIntegrations[activeCategory]) {
+        renderSelectorList(allIntegrations[activeCategory]);
+      }
+      return;
+    }
+
+    // Search across all categories
+    var results = [];
+    Object.keys(allIntegrations).forEach(function (category) {
+      allIntegrations[category].forEach(function (item) {
+        var name = (item.name || '').toLowerCase();
+        var desc = (item.description || '').toLowerCase();
+        if (name.indexOf(term) > -1 || desc.indexOf(term) > -1) {
+          results.push(item);
+        }
+      });
+    });
+
+    renderSelectorList(results);
+  }
+
+  function renderSelectorList(integrations) {
+    var $list = $('#fav-selector-list');
+    $list.empty();
+
+    if (!integrations || !integrations.length) {
+      $list.html('<div class="fav-selector-empty">Nenhuma consulta encontrada.</div>');
+      return;
+    }
+
+    integrations.forEach(function (item) {
+      var $item = $('<div class="fav-selector-item" data-id="' + item.id + '">' +
+        '<i class="' + (item.icon || 'ph-puzzle-piece') + '"></i>' +
+        '<span>' + item.name + '</span>' +
+        '</div>');
+
+      $list.append($item);
+    });
+  }
+
+  // Use event delegation for selector items (more reliable for dynamically created elements)
+  $(document).on('click', '.fav-selector-item', function () {
+    var integrationId = $(this).data('id');
+    if (integrationId) {
+      addFavorite(integrationId);
+    }
+  });
+
+  // Track which slot is being edited (if any)
+  var editingSlot = null;
+  var editingIntegrationId = null;
+
+  // Global function to open selector
+  window.openFavoriteSelector = function (element, slotIndex) {
+    editingSlot = slotIndex !== undefined ? slotIndex : null;
+
+    // If editing an existing favorite, get its current integration ID
+    if (editingSlot !== null && element) {
+      var $card = $(element).closest('.fav-card--filled');
+      if ($card.length) {
+        editingIntegrationId = $card.data('integration-id');
+      }
+    } else {
+      editingIntegrationId = null;
+    }
+
+    $('#fav-selector-modal').addClass('active');
+    $('#fav-selector-search').val('');
+
+    // Always reload data
+    loadIntegrationsForSelector();
+
+    setTimeout(function () {
+      $('#fav-selector-search').focus();
+    }, 100);
+  };
+
+  // Global function to close selector
+  window.closeFavoriteSelector = function () {
+    $('#fav-selector-modal').removeClass('active');
+    editingSlot = null;
+    editingIntegrationId = null;
+  };
+
+  // Global function to remove favorite
+  window.removeFavorite = function (integrationId) {
+    $.ajax({
+      url: serc_ajax.ajax_url,
+      type: 'POST',
+      data: {
+        action: 'serc_toggle_favorite',
+        integration_id: integrationId
+      },
+      success: function (response) {
+        if (response.success) {
+          // Reload dashboard to reflect changes
+          location.reload();
+        } else {
+          alert(response.data.message || 'Erro ao remover favorito');
+        }
+      }
+    });
+  };
+
+  function addFavorite(integrationId) {
+    // If we're editing (replacing) an existing favorite at a specific slot
+    if (editingSlot !== null && editingSlot !== undefined) {
+      $.ajax({
+        url: serc_ajax.ajax_url,
+        type: 'POST',
+        data: {
+          action: 'serc_replace_favorite',
+          new_id: integrationId,
+          slot_index: editingSlot
+        },
+        success: function (response) {
+          if (response.success) {
+            location.reload();
+          } else {
+            alert('Erro ao atualizar favorito: ' + (response.data.message || 'Erro desconhecido'));
+          }
+        },
+        error: function () {
+          alert('Erro na requisição. Tente novamente.');
+        }
+      });
+      return;
+    }
+
+    // Default processing for adding a new favorite
+    // If we're editing (replacing) an existing favorite but without slot index (legacy logic, shouldn't happen now)
+    if (editingIntegrationId && editingIntegrationId !== integrationId) {
+      $.ajax({
+        url: serc_ajax.ajax_url,
+        type: 'POST',
+        data: {
+          action: 'serc_toggle_favorite',
+          integration_id: editingIntegrationId
+        },
+        success: function (response) {
+          // After removing old, add new
+          doAddFavorite(integrationId);
+        },
+        error: function () {
+          // Even if remove fails, try to add new
+          doAddFavorite(integrationId);
+        }
+      });
+    } else {
+      doAddFavorite(integrationId);
+    }
+  }
+
+  function doAddFavorite(integrationId) {
+    $.ajax({
+      url: serc_ajax.ajax_url,
+      type: 'POST',
+      data: {
+        action: 'serc_toggle_favorite',
+        integration_id: integrationId
+      },
+      success: function (response) {
+        if (response.success) {
+          closeFavoriteSelector();
+          // Reload dashboard to reflect changes
+          location.reload();
+        } else {
+          alert(response.data.message || 'Erro ao adicionar favorito');
+        }
+      }
+    });
+  }
 
 });

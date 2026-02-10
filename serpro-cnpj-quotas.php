@@ -63,9 +63,18 @@ add_action('wp_ajax_nopriv_serc_load_view', 'serc_load_dashboard_view');
 add_action('wp_ajax_nopriv_serc_lookup', 'serc_lookup');
 add_action('wp_ajax_serc_upload', 'serc_upload');
 
+// Favorites management
+add_action('wp_ajax_serc_toggle_favorite', 'serc_toggle_favorite');
+add_action('wp_ajax_serc_get_favorites', 'serc_get_favorites');
+add_action('wp_ajax_serc_get_all_integrations', 'serc_get_all_integrations');
+add_action('wp_ajax_serc_replace_favorite', 'serc_replace_favorite');
+
 /* Hook: toda vez que um pedido é criado ou atualizado para "completed" */
 add_action('woocommerce_new_order', 'serc_check_new_order_status');
 add_action('woocommerce_order_status_completed', 'serc_handle_order_completed', 10, 1);
+
+/* Hook: track user login activity */
+add_action('wp_login', 'serc_track_login_activity', 10, 2);
 
 
 // Legacy shortcodes removed in v1.36 - forms now generated dynamically from integrations-config.php
@@ -118,6 +127,97 @@ function serc_get_user_credits()
     }
 
     return floatval($balance);
+}
+
+/**
+ * Log user activity
+ * 
+ * @param int $user_id User ID
+ * @param string $type Activity type (login, query, download)
+ * @param string $description Activity description
+ */
+function serc_log_activity($user_id, $type, $description)
+{
+    $activities = get_user_meta($user_id, 'serc_activities', true);
+    if (!is_array($activities)) {
+        $activities = [];
+    }
+
+    // Add new activity
+    $activities[] = [
+        'type' => $type,
+        'description' => $description,
+        'timestamp' => current_time('timestamp'),
+        'date' => current_time('Y-m-d H:i:s')
+    ];
+
+    // Keep only last 50 activities
+    if (count($activities) > 50) {
+        $activities = array_slice($activities, -50);
+    }
+
+    update_user_meta($user_id, 'serc_activities', $activities);
+}
+
+/**
+ * Get user activities
+ * 
+ * @param int $user_id User ID
+ * @param int $limit Number of activities to retrieve
+ * @return array Activities
+ */
+function serc_get_user_activities($user_id, $limit = 10)
+{
+    $activities = get_user_meta($user_id, 'serc_activities', true);
+    if (!is_array($activities)) {
+        return [];
+    }
+
+    // Get most recent activities
+    $activities = array_slice(array_reverse($activities), 0, $limit);
+
+    return $activities;
+}
+
+/**
+ * Get count of queries performed today
+ * 
+ * @param int $user_id User ID
+ * @return int Query count
+ */
+function serc_get_today_query_count($user_id)
+{
+    $activities = get_user_meta($user_id, 'serc_activities', true);
+    if (!is_array($activities)) {
+        return 0;
+    }
+
+    $today = current_time('Y-m-d');
+    $count = 0;
+
+    foreach ($activities as $activity) {
+        if ($activity['type'] === 'query') {
+            $activity_date = date('Y-m-d', $activity['timestamp']);
+            if ($activity_date === $today) {
+                $count++;
+            }
+        }
+    }
+
+    return $count;
+}
+
+/**
+ * Track user login activity
+ * 
+ * @param string $user_login Username
+ * @param WP_User $user User object
+ */
+function serc_track_login_activity($user_login, $user)
+{
+    if ($user && isset($user->ID)) {
+        serc_log_activity($user->ID, 'login', 'Acesso ao sistema');
+    }
 }
 
 
@@ -227,7 +327,7 @@ function serc_load_dashboard_view()
     // Get the content
     $content = ob_get_clean();
 
-    // Return JSON response with the view for sidebar state update
+    // Return JSON response with the view forsidebar state update
     wp_send_json_success(array(
         'html' => $content,
         'view' => $view,
@@ -236,6 +336,320 @@ function serc_load_dashboard_view()
     ));
 }
 
+add_action('wp_ajax_serc_search_integrations', 'serc_search_integrations');
+add_action('wp_ajax_nopriv_serc_search_integrations', 'serc_search_integrations');
+
+function serc_search_integrations()
+{
+    // Make sure config is loaded (required for AJAX context)
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+
+    // Helper function to remove accents
+    $remove_accents = function ($string) {
+        $accents = array(
+            'á' => 'a',
+            'à' => 'a',
+            'â' => 'a',
+            'ã' => 'a',
+            'ä' => 'a',
+            'å' => 'a',
+            'é' => 'e',
+            'è' => 'e',
+            'ê' => 'e',
+            'ë' => 'e',
+            'í' => 'i',
+            'ì' => 'i',
+            'î' => 'i',
+            'ï' => 'i',
+            'ó' => 'o',
+            'ò' => 'o',
+            'ô' => 'o',
+            'õ' => 'o',
+            'ö' => 'o',
+            'ú' => 'u',
+            'ù' => 'u',
+            'û' => 'u',
+            'ü' => 'u',
+            'ç' => 'c',
+            'ñ' => 'n',
+            'Á' => 'A',
+            'À' => 'A',
+            'Â' => 'A',
+            'Ã' => 'A',
+            'Ä' => 'A',
+            'Å' => 'A',
+            'É' => 'E',
+            'È' => 'E',
+            'Ê' => 'E',
+            'Ë' => 'E',
+            'Í' => 'I',
+            'Ì' => 'I',
+            'Î' => 'I',
+            'Ï' => 'I',
+            'Ó' => 'O',
+            'Ò' => 'O',
+            'Ô' => 'O',
+            'Õ' => 'O',
+            'Ö' => 'O',
+            'Ú' => 'U',
+            'Ù' => 'U',
+            'Û' => 'U',
+            'Ü' => 'U',
+            'Ç' => 'C',
+            'Ñ' => 'N'
+        );
+        return strtr($string, $accents);
+    };
+
+    // Support both GET and POST for compatibility
+    $term = isset($_POST['term']) ? $_POST['term'] : (isset($_GET['term']) ? $_GET['term'] : '');
+    $term = strtolower(trim(sanitize_text_field($term)));
+    $term_normalized = $remove_accents($term);
+
+    $all_integrations = serc_get_integrations_config();
+
+    // If term is empty, return all integrations grouped by category
+    if (empty($term)) {
+        $grouped_result = array();
+        foreach ($all_integrations as $category => $integrations) {
+            $category_items = array();
+            foreach ($integrations as $integration) {
+                $category_items[] = array(
+                    'id' => $integration['id'],
+                    'name' => $integration['name'],
+                    'icon' => isset($integration['icon']) ? $integration['icon'] : 'ph-puzzle-piece',
+                    'description' => isset($integration['description']) ? $integration['description'] : ''
+                );
+            }
+            $grouped_result[$category] = $category_items;
+        }
+        wp_send_json_success($grouped_result);
+        wp_die();
+    }
+
+    $results = array();
+
+    foreach ($all_integrations as $category => $integrations) {
+        foreach ($integrations as $integration) {
+            $name = strtolower($integration['name']);
+            $desc = strtolower($integration['description']);
+            $name_normalized = $remove_accents($name);
+            $desc_normalized = $remove_accents($desc);
+
+            // Search in Name OR Description (accent-insensitive)
+            if (strpos($name_normalized, $term_normalized) !== false || strpos($desc_normalized, $term_normalized) !== false) {
+                $results[] = [
+                    'id' => $integration['id'],
+                    'name' => $integration['name'],
+                    'description' => $integration['description'],
+                    'icon' => $integration['icon'] ?? 'ph-puzzle-piece',
+                    'url' => serc_get_dashboard_url(['view' => 'query', 'integration' => $integration['id']]),
+                    'category' => $category
+                ];
+            }
+        }
+    }
+
+    // Limit results if needed, e.g., max 10
+    $results = array_slice($results, 0, 10);
+
+    wp_send_json_success($results);
+    wp_die();
+}
+
+// Toggle a favorite integration for the current user
+function serc_toggle_favorite()
+{
+    error_log('[SERC] serc_toggle_favorite called');
+    $user_id = get_current_user_id();
+    error_log('[SERC] User ID: ' . $user_id);
+    if (!$user_id) {
+        error_log('[SERC] User not authenticated');
+        wp_send_json_error(['message' => 'Usuário não autenticado']);
+        wp_die();
+    }
+
+    $integration_id = isset($_POST['integration_id']) ? sanitize_text_field($_POST['integration_id']) : '';
+    error_log('[SERC] Integration ID: ' . $integration_id);
+    if (empty($integration_id)) {
+        error_log('[SERC] Integration ID is empty');
+        wp_send_json_error(['message' => 'ID da integração não informado']);
+        wp_die();
+    }
+
+    // Get current favorites
+    $favorites = get_user_meta($user_id, 'serc_favorite_integrations', true);
+    if (!is_array($favorites)) {
+        $favorites = [];
+    }
+
+    // Check if already a favorite
+    $key = array_search($integration_id, $favorites);
+    if ($key !== false) {
+        // Remove from favorites
+        unset($favorites[$key]);
+        $favorites = array_values($favorites); // Re-index
+        $action = 'removed';
+    } else {
+        // Add to favorites (max 6)
+        if (count($favorites) >= 6) {
+            wp_send_json_error(['message' => 'Máximo de 6 favoritos atingido']);
+            wp_die();
+        }
+        $favorites[] = $integration_id;
+        $action = 'added';
+    }
+
+    update_user_meta($user_id, 'serc_favorite_integrations', $favorites);
+    error_log('[SERC] Favorites updated: ' . print_r($favorites, true));
+
+    wp_send_json_success([
+        'action' => $action,
+        'favorites' => $favorites
+    ]);
+    wp_die();
+}
+
+// Replace a favorite integration at a specific index
+function serc_replace_favorite()
+{
+    error_log('[SERC] serc_replace_favorite called');
+    $user_id = get_current_user_id();
+    error_log('[SERC] User ID: ' . $user_id);
+    if (!$user_id) {
+        error_log('[SERC] User not authenticated');
+        wp_send_json_error(['message' => 'Usuário não autenticado']);
+        wp_die();
+    }
+
+    $new_id = isset($_POST['new_id']) ? sanitize_text_field($_POST['new_id']) : '';
+    $slot_index = isset($_POST['slot_index']) ? intval($_POST['slot_index']) : -1;
+    error_log('[SERC] New ID: ' . $new_id . ', Slot Index: ' . $slot_index);
+
+    if (empty($new_id)) {
+        error_log('[SERC] New ID is empty');
+        wp_send_json_error(['message' => 'ID da integração não informado']);
+        wp_die();
+    }
+
+    // Get current favorites
+    $favorites = get_user_meta($user_id, 'serc_favorite_integrations', true);
+    if (!is_array($favorites)) {
+        $favorites = [];
+    }
+
+    // Check if new_id is already in favorites (prevent duplicates)
+    $existing_key = array_search($new_id, $favorites);
+    if ($existing_key !== false) {
+        // If already exists, remove it first so we can move it to new slot
+        unset($favorites[$existing_key]);
+    }
+
+    // Ensure array keys are sequential for logic but we will map by index
+    // Actually, to target a specific index, we need to correct the array keys if unset broke them
+    $favorites = array_values($favorites);
+
+    if ($slot_index >= 0) {
+        // Insert/Replace at specific index
+        // If slot index is larger than current count (e.g. index 3 but only 1 favorite), 
+        // we just append. But UI logic tries to put it in valid slot.
+        // We will force put it there. But PHP array must be contiguous for JSON usually? 
+        // No, WP/PHP handles indices. 
+        // Best approach: 
+        // 1. Fill gaps with placeholder if needed? 
+        // No, let's keep it simple: Replace what's at index, or append.
+
+        // However, if we removed $new_id from another position, array size decreased.
+        // So $slot_index might aim at the hole.
+
+        // Let's rely on array access.
+        if (isset($favorites[$slot_index])) {
+            $favorites[$slot_index] = $new_id;
+        } else {
+            // If trying to edit a slot that theoretically shouldn't exist or is empty
+            // Just append
+            $favorites[] = $new_id;
+        }
+    } else {
+        $favorites[] = $new_id;
+    }
+
+    // Final re-index
+    $favorites = array_values($favorites);
+
+    update_user_meta($user_id, 'serc_favorite_integrations', $favorites);
+    error_log('[SERC] Favorites replaced: ' . print_r($favorites, true));
+
+    wp_send_json_success(['action' => 'replaced', 'favorites' => $favorites]);
+    wp_die();
+}
+
+// Get user's favorite integrations
+function serc_get_favorites()
+{
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_send_json_success([]);
+        wp_die();
+    }
+
+    $favorites = get_user_meta($user_id, 'serc_favorite_integrations', true);
+    if (!is_array($favorites)) {
+        $favorites = [];
+    }
+
+    // Get integration details
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+    $all_integrations = serc_get_integrations_config();
+    $result = [];
+
+    foreach ($favorites as $fav_id) {
+        foreach ($all_integrations as $category => $integrations) {
+            foreach ($integrations as $integration) {
+                if ($integration['id'] === $fav_id) {
+                    $result[] = [
+                        'id' => $integration['id'],
+                        'name' => $integration['name'],
+                        'icon' => $integration['icon'] ?? 'ph-puzzle-piece',
+                        'url' => serc_get_dashboard_url(['view' => 'query', 'integration' => $integration['id']])
+                    ];
+                    break 2;
+                }
+            }
+        }
+    }
+
+    wp_send_json_success($result);
+    wp_die();
+}
+
+/**
+ * AJAX handler to get all integrations grouped by category
+ */
+function serc_get_all_integrations()
+{
+    // Ensure config is loaded
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+
+    $all_integrations = serc_get_integrations_config();
+    $result = array();
+
+    foreach ($all_integrations as $category => $integrations) {
+        $category_items = array();
+        foreach ($integrations as $integration) {
+            $category_items[] = array(
+                'id' => $integration['id'],
+                'name' => $integration['name'],
+                'icon' => isset($integration['icon']) ? $integration['icon'] : 'ph-puzzle-piece',
+                'description' => isset($integration['description']) ? $integration['description'] : ''
+            );
+        }
+        $result[$category] = $category_items;
+    }
+
+    wp_send_json_success($result);
+    wp_die();
+}
 
 function serc_shortcodes_page()
 {
@@ -264,11 +678,11 @@ function serc_shortcodes_page()
         array('label' => 'Histórico de Roubo ou Furto', 'code' => '[serc_historico_roubo_furto_form]'),
         array('label' => 'Índice de Risco (Histórico Veicular)', 'code' => '[serc_indice_risco_veicular_form]'),
         array('label' => 'Licenciamento Anterior', 'code' => '[serc_licenciamento_anterior_form]'),
-        array('label' => 'Proprietário Atual (API)', 'code' => '[serc_ic_proprietario_atual_form]'),
+        array('label' => 'Proprietário Atual', 'code' => '[serc_ic_proprietario_atual_form]'),
         array('label' => 'Recall', 'code' => '[serc_recall_form]'),
-        array('label' => 'Gravame Detalhamento (API)', 'code' => '[serc_gravame_detalhamento_form]'),
+        array('label' => 'Gravame Detalhamento', 'code' => '[serc_gravame_detalhamento_form]'),
         array('label' => 'RENAJUD (Restrições)', 'code' => '[serc_renajud_form]'),
-        array('label' => 'RENAINF (API)', 'code' => '[serc_renainf_placa_form]'),
+        array('label' => 'RENAINF (Por Placa)', 'code' => '[serc_renainf_placa_form]'),
         array('label' => 'FIPE', 'code' => '[serc_fipe_form]'),
         array('label' => 'Sinistro', 'code' => '[serc_sinistro_form]'),
         array('label' => 'Serasa Premium', 'code' => '[serc_serasa_premium_form]'),
@@ -310,17 +724,7 @@ function serc_shortcodes_page()
                 <?php endforeach; ?>
             </tbody>
         </table>
-        <script>
-            (function () {
-                document.addEventListener('click', function (e) {
-                    if (e.target && e.target.classList.contains('serc-copy')) {
-                        var code = e.target.getAttribute('data-code');
-                        navigator.clipboard.writeText(code);
-                        e.target.textContent = 'Copiado!';
-                        setTimeout(function () { e.target.textContent = 'Copiar'; }, 1500);
-                    }
-                });
-            })();
+        <script>         (function () { document.addEventListener('click', function (e) { if (e.target && e.target.classList.contains('serc-copy')) { var code = e.target.getAttribute('data-code'); navigator.clipboard.writeText(code); e.target.textContent = 'Copiado!'; setTimeout(function () { e.target.textContent = 'Copiar'; }, 1500); } }); })();
         </script>
     </div>
     <?php
@@ -503,8 +907,8 @@ function serc_apifull_lookup_gravame($chassi)
 function serc_apifull_lookup_renainf_placa_renavam($placa, $renavam)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/renainf',
-        array('placa' => $placa, 'renavam' => $renavam, 'link' => 'renainf'),
+        '/api/ic-renainf',
+        array('placa' => $placa, 'renavam' => $renavam, 'link' => 'ic-renainf'),
         'SERPRO Consultas: RENAINF'
     );
 }
@@ -512,8 +916,8 @@ function serc_apifull_lookup_renainf_placa_renavam($placa, $renavam)
 function serc_apifull_lookup_scpc_bv_plus_v2($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/scpc-bv-plus-v2',
-        array('cpf' => $cpf, 'link' => 'scpc-bv-plus-v2'),
+        '/api/r-boavista',
+        array('document' => $cpf, 'link' => 'r-boavista'),
         'SERPRO Consultas: SCPC BV PLUS V2'
     );
 }
@@ -521,8 +925,8 @@ function serc_apifull_lookup_scpc_bv_plus_v2($cpf)
 function serc_apifull_lookup_srs_premium($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/srs-premium',
-        array('cpf' => $cpf, 'link' => 'srs-premium'),
+        '/api/r-srs-premium',
+        array('document' => $cpf, 'link' => 'r-srs-premium'),
         'SERPRO Consultas: SRS PREMIUM'
     );
 }
@@ -530,8 +934,8 @@ function serc_apifull_lookup_srs_premium($cpf)
 function serc_apifull_lookup_agregados_basica_propria($param)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/agregados-basica-propria',
-        array('param' => $param, 'link' => 'agregados-basica-propria'),
+        '/api/agregados-propria',
+        array('placa' => $param, 'link' => 'agregados-propria'),
         'SERPRO Consultas: AGREGADOS BASICA PROPRIA'
     );
 }
@@ -539,8 +943,8 @@ function serc_apifull_lookup_agregados_basica_propria($param)
 function serc_apifull_lookup_bin_estadual($estado)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/bin-estadual',
-        array('estado' => $estado, 'link' => 'bin-estadual'),
+        '/api/ic-bin-estadual',
+        array('placa' => $estado, 'link' => 'ic-bin-estadual'),
         'SERPRO Consultas: BIN ESTADUAL'
     );
 }
@@ -548,8 +952,8 @@ function serc_apifull_lookup_bin_estadual($estado)
 function serc_apifull_lookup_bin_nacional($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/bin-nacional',
-        array('cpf' => $cpf, 'link' => 'bin-nacional'),
+        '/api/ic-bin-nacional',
+        array('placa' => $cpf, 'link' => 'ic-bin-nacional'),
         'SERPRO Consultas: BIN NACIONAL'
     );
 }
@@ -557,8 +961,8 @@ function serc_apifull_lookup_bin_nacional($cpf)
 function serc_apifull_lookup_foto_leilao($leilao_id)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/foto-leilao',
-        array('leilaoId' => $leilao_id, 'link' => 'foto-leilao'),
+        '/api/ic-foto-leilao',
+        array('placa' => $leilao_id, 'link' => 'ic-foto-leilao'),
         'SERPRO Consultas: FOTO LEILAO'
     );
 }
@@ -567,7 +971,7 @@ function serc_apifull_lookup_leilao($filtro)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/leilao',
-        array('filtro' => $filtro, 'link' => 'leilao'),
+        array('placa' => $filtro, 'link' => 'leilao'),
         'SERPRO Consultas: LEILAO'
     );
 }
@@ -575,8 +979,8 @@ function serc_apifull_lookup_leilao($filtro)
 function serc_apifull_lookup_leilao_score_perda_total($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/leilao-score-perda-total',
-        array('placa' => $placa, 'link' => 'leilao-score-perda-total'),
+        '/api/ic-leilao-score',
+        array('placa' => $placa, 'link' => 'ic-leilao-score'),
         'SERPRO Consultas: LEILAO SCORE PERDA TOTAL'
     );
 }
@@ -584,21 +988,21 @@ function serc_apifull_lookup_leilao_score_perda_total($placa)
 function serc_apifull_lookup_laudo_veicular($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/laudo-veicular',
-        array('placa' => $placa, 'link' => 'laudo-veicular'),
+        '/api/ic-laudo-veicular',
+        array('placa' => $placa, 'link' => 'ic-laudo-veicular'),
         'SERPRO Consultas: LAUDO VEICULAR'
     );
 }
 
 function serc_apifull_lookup_laudo_veicular_params($placa, $chassi)
 {
-    $payload = array('link' => 'laudo-veicular');
+    $payload = array('link' => 'ic-laudo-veicular');
     if (!empty($placa))
         $payload['placa'] = $placa;
     if (!empty($chassi))
         $payload['chassi'] = $chassi;
     return serc_apifull_post_extract_pdf_base64(
-        '/api/laudo-veicular',
+        '/api/ic-laudo-veicular',
         $payload,
         'SERPRO Consultas: LAUDO VEICULAR'
     );
@@ -607,8 +1011,8 @@ function serc_apifull_lookup_laudo_veicular_params($placa, $chassi)
 function serc_apifull_lookup_historico_roubo_furto($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/historico-roubo-furto',
-        array('placa' => $placa, 'link' => 'historico-roubo-furto'),
+        '/api/ic-historico-roubo-furto',
+        array('placa' => $placa, 'link' => 'ic-historico-roubo-furto'),
         'SERPRO Consultas: HISTORICO ROUBO FURTO'
     );
 }
@@ -616,8 +1020,8 @@ function serc_apifull_lookup_historico_roubo_furto($placa)
 function serc_apifull_lookup_indice_risco_veicular($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/indice-risco-veicular',
-        array('placa' => $placa, 'link' => 'indice-risco-veicular'),
+        '/api/inde-risco',
+        array('placa' => $placa, 'link' => 'indice-risco'),
         'SERPRO Consultas: INDICE RISCO VEICULAR'
     );
 }
@@ -625,8 +1029,8 @@ function serc_apifull_lookup_indice_risco_veicular($placa)
 function serc_apifull_lookup_licenciamento_anterior($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/licenciamento-anterior',
-        array('placa' => $placa, 'link' => 'licenciamento-anterior'),
+        '/api/ic-licenciamento',
+        array('placa' => $placa, 'link' => 'ic-licenciamento'),
         'SERPRO Consultas: LICENCIAMENTO ANTERIOR'
     );
 }
@@ -643,8 +1047,8 @@ function serc_apifull_lookup_ic_proprietario_atual($placa)
 function serc_apifull_lookup_recall($modelo)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/recall',
-        array('modelo' => $modelo, 'link' => 'recall'),
+        '/api/ic-recall',
+        array('placa' => $modelo, 'link' => 'ic-recall'),
         'SERPRO Consultas: RECALL'
     );
 }
@@ -661,8 +1065,8 @@ function serc_apifull_lookup_gravame_detalhamento($placa)
 function serc_apifull_lookup_renajud($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/renajud',
-        array('placa' => $placa, 'link' => 'renajud'),
+        '/api/ic-renajud',
+        array('placa' => $placa, 'link' => 'ic-renajud'),
         'SERPRO Consultas: RENAJUD'
     );
 }
@@ -670,8 +1074,8 @@ function serc_apifull_lookup_renajud($placa)
 function serc_apifull_lookup_renainf($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/renainf',
-        array('placa' => $placa, 'link' => 'renainf'),
+        '/api/ic-renainf',
+        array('placa' => $placa, 'link' => 'ic-renainf'),
         'SERPRO Consultas: RENAINF'
     );
 }
@@ -680,7 +1084,7 @@ function serc_apifull_lookup_fipe($marca, $modelo, $ano)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/fipe',
-        array('marca' => $marca, 'modelo' => $modelo, 'ano' => $ano, 'link' => 'fipe'),
+        array('placa' => $marca, 'link' => 'fipe'),
         'SERPRO Consultas: FIPE'
     );
 }
@@ -688,8 +1092,8 @@ function serc_apifull_lookup_fipe($marca, $modelo, $ano)
 function serc_apifull_lookup_sinistro($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/sinistro',
-        array('placa' => $placa, 'link' => 'sinistro'),
+        '/api/ic-sinistro',
+        array('placa' => $placa, 'link' => 'ic-sinistro'),
         'SERPRO Consultas: SINISTRO'
     );
 }
@@ -697,8 +1101,8 @@ function serc_apifull_lookup_sinistro($placa)
 function serc_apifull_lookup_serasa_premium($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/serasa-premium',
-        array('cpf' => $cpf, 'link' => 'serasa-premium'),
+        '/api/r-srs-premium',
+        array('document' => $cpf, 'link' => 'r-srs-premium'),
         'SERPRO Consultas: SERASA PREMIUM'
     );
 }
@@ -715,8 +1119,8 @@ function serc_apifull_lookup_ic_basico_score($cpf)
 function serc_apifull_lookup_scpc_boa_vista($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/scpc-boa-vista',
-        array('cpf' => $cpf, 'link' => 'scpc-boa-vista'),
+        '/api/r-bv-basica',
+        array('document' => $cpf, 'link' => 'r-bv-basica'),
         'SERPRO Consultas: SCPC BOA VISTA'
     );
 }
@@ -724,8 +1128,8 @@ function serc_apifull_lookup_scpc_boa_vista($cpf)
 function serc_apifull_lookup_bacen($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/bacen',
-        array('cpf' => $cpf, 'link' => 'bacen'),
+        '/api/ic-bacen',
+        array('document' => $cpf, 'link' => 'ic-bacen'),
         'SERPRO Consultas: BACEN'
     );
 }
@@ -733,8 +1137,8 @@ function serc_apifull_lookup_bacen($cpf)
 function serc_apifull_lookup_quod($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/quod',
-        array('cpf' => $cpf, 'link' => 'quod'),
+        '/api/ic-quod',
+        array('document' => $cpf, 'link' => 'ic-quod'),
         'SERPRO Consultas: QUOD'
     );
 }
@@ -742,8 +1146,8 @@ function serc_apifull_lookup_quod($cpf)
 function serc_apifull_lookup_spc_brasil_cenprot($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/spc-brasil-cenprot',
-        array('cpf' => $cpf, 'link' => 'spc-brasil-cenprot'),
+        '/api/cp-spc-cenprot',
+        array('document' => $cpf, 'link' => 'cp-spc-cenprot'),
         'SERPRO Consultas: SPC BRASIL CENPROT'
     );
 }
@@ -751,8 +1155,8 @@ function serc_apifull_lookup_spc_brasil_cenprot($cpf)
 function serc_apifull_lookup_spc_brasil_serasa($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/spc-brasil-serasa',
-        array('cpf' => $cpf, 'link' => 'spc-brasil-serasa'),
+        '/api/r-spc-srs',
+        array('cpf' => $cpf, 'link' => 'r-spc-srs'),
         'SERPRO Consultas: SPC BRASIL SERASA'
     );
 }
@@ -769,8 +1173,8 @@ function serc_apifull_lookup_dividas_bancrias_cpf($cpf)
 function serc_apifull_lookup_cadastrais_score_dividas($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/cadastrais-score-dividas',
-        array('cpf' => $cpf, 'link' => 'cadastrais-score-dividas'),
+        '/api/r-cadastrais-score-dividas',
+        array('document' => $cpf, 'link' => 'r-cadastrais-score-dividas'),
         'SERPRO Consultas: CADASTRAIS SCORE DIVIDAS'
     );
 }
@@ -778,8 +1182,8 @@ function serc_apifull_lookup_cadastrais_score_dividas($cpf)
 function serc_apifull_lookup_cadastrais_score_dividas_cp($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/cadastrais-score-dividas-cp',
-        array('cpf' => $cpf, 'link' => 'cadastrais-score-dividas-cp'),
+        '/api/cp-cadastrais-score-dividas',
+        array('document' => $cpf, 'link' => 'cp-cadastrais-score-dividas'),
         'SERPRO Consultas: CADASTRAIS SCORE DIVIDAS CP'
     );
 }
@@ -787,8 +1191,8 @@ function serc_apifull_lookup_cadastrais_score_dividas_cp($cpf)
 function serc_apifull_lookup_scr_bacen_score($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/scr-bacen-score',
-        array('cpf' => $cpf, 'link' => 'scr-bacen-score'),
+        '/api/ic-bacen',
+        array('document' => $cpf, 'link' => 'ic-bacen'),
         'SERPRO Consultas: SCR BACEN SCORE'
     );
 }
@@ -796,8 +1200,8 @@ function serc_apifull_lookup_scr_bacen_score($cpf)
 function serc_apifull_lookup_protesto_nacional_cenprot($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/protesto-nacional-cenprot',
-        array('cpf' => $cpf, 'link' => 'protesto-nacional-cenprot'),
+        '/api/ac-protesto',
+        array('document' => $cpf, 'link' => 'ac-protesto'),
         'SERPRO Consultas: PROTESTO NACIONAL CENPROT'
     );
 }
@@ -814,8 +1218,8 @@ function serc_apifull_lookup_r_acoes_e_processos_judiciais($cpf)
 function serc_apifull_lookup_dossie_juridico($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/dossie-juridico',
-        array('cpf' => $cpf, 'link' => 'dossie-juridico'),
+        '/api/ic-dossie-juridico',
+        array('cpf' => $cpf, 'link' => 'ic-dossie-juridico'),
         'SERPRO Consultas: DOSSIE JURIDICO'
     );
 }
@@ -823,8 +1227,8 @@ function serc_apifull_lookup_dossie_juridico($cpf)
 function serc_apifull_lookup_certidao_nacional_debitos_trabalhistas($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/certidao-nacional-debitos-trabalhistas',
-        array('cpf' => $cpf, 'link' => 'certidao-nacional-debitos-trabalhistas'),
+        '/api/ic-cndt',
+        array('document' => $cpf, 'link' => 'ic-cndt'),
         'SERPRO Consultas: CNDT'
     );
 }
@@ -1184,6 +1588,10 @@ function serc_lookup()
         }
         update_post_meta($consulta_id, 'upload_status', $upload_status);
     }
+
+    // Log the query activity
+    serc_log_activity($user_id, 'query', 'Consulta ' . $type);
+
     wp_send_json_success(array(
         'quota' => $debit_info['balance'],
         'debited' => $debit_info['debited'],
@@ -1690,6 +2098,11 @@ function serc_secure_download()
         $content = wp_remote_retrieve_body($req);
     }
     update_post_meta($pid, 'hash_used', 1);
+
+    // Log the download activity
+    $type = get_post_meta($pid, 'type', true);
+    serc_log_activity($uid, 'download', 'Download relatório ' . $type);
+
     error_log('SERPRO Consultas: download id=' . $pid . ' user=' . $uid . ' filename=' . $filename);
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $filename . '"');

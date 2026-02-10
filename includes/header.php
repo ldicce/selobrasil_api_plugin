@@ -57,6 +57,7 @@ if (!defined('ABSPATH'))
             <div class="global-search">
                 <i class="ph ph-magnifying-glass"></i>
                 <input type="text" placeholder="Buscar consultas">
+                <div class="global-search-results"></div>
             </div>
         </div>
         <div class="header-right">

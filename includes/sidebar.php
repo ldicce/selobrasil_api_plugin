@@ -28,22 +28,12 @@ $current_page = $_GET['view'] ?? 'dashboard';
         </li>
         <li class="nav-item">
             <a href="#" class="nav-link">
-                <i class="ph-fill ph-wrench"></i> Ferramentas
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="#" class="nav-link">
                 <i class="ph-fill ph-chart-bar"></i> Relatórios
             </a>
         </li>
         <li class="nav-item">
             <a href="#" class="nav-link">
-                <i class="ph-fill ph-folder"></i> Armazenamento
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="#" class="nav-link">
-                <i class="ph-fill ph-file-text"></i> Documentação
+                <i class="ph-fill ph-storefront"></i> Loja
             </a>
         </li>
     </ul>
