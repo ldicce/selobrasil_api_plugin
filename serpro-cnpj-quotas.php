@@ -1591,13 +1591,12 @@ function serc_lookup()
             update_post_meta($consulta_id, 'pdf_base64', $pdf_base64);
             $up = serc_upload_pdf_to_storage($filename, $pdf_base64);
             $upload_status = !empty($up['ok']) ? 'uploaded' : ('failed:' . ($up['message'] ?? ''));
+            $hash = serc_consulta_ensure_hash($consulta_id);
+            $download_url = admin_url('admin-ajax.php?action=serc_download&hash=' . $hash);
             error_log('SERPRO Consultas: consulta ' . $consulta_id . ' upload_status=' . $upload_status);
         } else {
             error_log('SERPRO Consultas: consulta ' . $consulta_id . ' no PDF returned from API for type=' . $type);
         }
-        // Always generate download URL so button appears even if PDF arrives later
-        $hash = serc_consulta_ensure_hash($consulta_id);
-        $download_url = admin_url('admin-ajax.php?action=serc_download&hash=' . $hash);
         update_post_meta($consulta_id, 'upload_status', $upload_status);
     }
 

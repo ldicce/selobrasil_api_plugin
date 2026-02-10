@@ -99,14 +99,14 @@ jQuery(function ($) {
         $result.html(msg + '<br>' + det);
         var dl = resp.data && resp.data.result && resp.data.result.download_url;
         if (dl) {
-          $result.append('<p><a class="button" href="' + dl + '">download</a></p>');
+          $result.append('<p><a class="action-btn" href="' + dl + '"><i class="ph-bold ph-download-simple"></i> Download PDF</a></p>');
         } else {
           var pdfB64 = (resp.data && resp.data.result && resp.data.result.pdfBase64) || (resp.data && resp.data.pdfBase64);
           if (pdfB64) {
             var url = base64ToBlobUrl(pdfB64);
             if (url) {
               console.log('[SERC] PDF blob URL created:', url);
-              $result.append('<p><a class="button" href="' + url + '" download="consulta.pdf">download</a></p>');
+              $result.append('<p><a class="action-btn" href="' + url + '" download="consulta.pdf"><i class="ph-bold ph-download-simple"></i> Download PDF</a></p>');
             }
           }
         }
