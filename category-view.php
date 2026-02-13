@@ -45,6 +45,10 @@ if (empty($category)) {
                     class="action-card">
                     <i class="ph ph-car"></i> Veicular
                 </a>
+                <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'credito']); ?>"
+                    class="action-card">
+                    <i class="ph ph-receipt"></i> Dívidas e Crédito
+                </a>
                 <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'juridico']); ?>"
                     class="action-card" style="background: #f0f7f4">
                     <i class="ph ph-scales"></i> Jurídico
@@ -61,6 +65,7 @@ if (empty($category)) {
         'cpf' => 'CPF',
         'cnpj' => 'CNPJ',
         'veicular' => 'Veicular',
+        'credito' => 'Dívidas e Crédito',
         'juridico' => 'Jurídico'
     ];
 
@@ -120,7 +125,7 @@ if (empty($category)) {
                         <div class="integration-value">
                             <img src="<?php echo plugin_dir_url(__FILE__); ?>assets/img/credit.svg" alt="Ícone Créditos"
                                 style="width: 18px; height: 18px; vertical-align: middle;">
-                            <?php echo esc_html(number_format(serc_get_global_debit($integration['id']), 2, ',', '.')); ?>
+                            <?php echo esc_html($integration['value']); ?>
                         </div>
                         <div class="integration-type">
                             <?php echo esc_html($integration['type']); ?>

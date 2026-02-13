@@ -2,7 +2,7 @@
 /*
 Plugin Name: Selo Brasil - Consultas
 Description: Define cotas fixas automaticamente sempre que um pedido é criado com status Concluído.
-Version: 3.3.1
+Version: 3.3.2
 Author: Selo Brasil
 */
 
@@ -1309,7 +1309,29 @@ function serc_minimal_pdf_from_html($html)
     return $pdf;
 }
 
-function serc_apifull_lookup_cpf_renda($cpf)
+// ==========================================
+// 1. DADOS CADASTRAIS (CPF/CNPJ)
+// ==========================================
+
+function serc_apifull_pf_dadosbasicos($cpf)
+{
+    return serc_apifull_post_extract_pdf_base64(
+        '/api/pf-dadosbasicos',
+        array('cpf' => $cpf, 'link' => 'pf-dadosbasicos'),
+        'SERPRO Consultas: CPF SIMPLES'
+    );
+}
+
+function serc_apifull_ic_cpf_completo($cpf)
+{
+    return serc_apifull_post_extract_pdf_base64(
+        '/api/ic-cpf-completo',
+        array('cpf' => $cpf, 'link' => 'ic-cpf-completo'),
+        'SERPRO Consultas: CPF COMPLETO'
+    );
+}
+
+function serc_apifull_r_cpf_completo($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/r-cpf-completo',
@@ -1318,7 +1340,7 @@ function serc_apifull_lookup_cpf_renda($cpf)
     );
 }
 
-function serc_apifull_lookup_ic_nome($name, $state)
+function serc_apifull_ic_nome($name, $state)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-nome',
@@ -1327,34 +1349,16 @@ function serc_apifull_lookup_ic_nome($name, $state)
     );
 }
 
-function serc_apifull_lookup_ic_telefone($ddd, $telefone, $state)
+function serc_apifull_ic_telefone($phone)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-telefone',
-        array('ddd' => $ddd, 'telefone' => $telefone, 'state' => $state, 'link' => 'ic-telefone'),
+        array('phone' => $phone, 'link' => 'ic-telefone'),
         'SERPRO Consultas: TELEFONE'
     );
 }
 
-function serc_apifull_lookup_ic_placa($placa)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-placa',
-        array('placa' => $placa, 'link' => 'ic-placa'),
-        'SERPRO Consultas: PLACA'
-    );
-}
-
-function serc_apifull_lookup_ic_cnh($cpf)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-cnh',
-        array('cpf' => $cpf, 'link' => 'ic-cnh'),
-        'SERPRO Consultas: CNH'
-    );
-}
-
-function serc_apifull_lookup_cnpj($cnpj)
+function serc_apifull_cnpj($cnpj)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/cnpj',
@@ -1363,115 +1367,70 @@ function serc_apifull_lookup_cnpj($cnpj)
     );
 }
 
-function serc_apifull_lookup_crlv($placa)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/crlv',
-        array('placa' => $placa, 'link' => 'crlv'),
-        'SERPRO Consultas: CRLV'
-    );
-}
+// ==========================================
+// 2. VEICULAR
+// ==========================================
 
-function serc_apifull_lookup_proprietario_placa($placa)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/proprietario-placa',
-        array('placa' => $placa, 'link' => 'proprietario-placa'),
-        'SERPRO Consultas: PROPRIETARIO PLACA'
-    );
-}
-
-function serc_apifull_lookup_gravame($chassi)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/gravame',
-        array('chassi' => $chassi, 'link' => 'gravame'),
-        'SERPRO Consultas: GRAVAME'
-    );
-}
-
-function serc_apifull_lookup_renainf_placa_renavam($placa, $renavam)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-renainf',
-        array('placa' => $placa, 'renavam' => $renavam, 'link' => 'ic-renainf'),
-        'SERPRO Consultas: RENAINF'
-    );
-}
-
-function serc_apifull_lookup_scpc_bv_plus_v2($cpf)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/r-boavista',
-        array('document' => $cpf, 'link' => 'r-boavista'),
-        'SERPRO Consultas: SCPC BV PLUS V2'
-    );
-}
-
-function serc_apifull_lookup_srs_premium($cpf)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/r-srs-premium',
-        array('document' => $cpf, 'link' => 'r-srs-premium'),
-        'SERPRO Consultas: SRS PREMIUM'
-    );
-}
-
-function serc_apifull_lookup_agregados_basica_propria($param)
+function serc_apifull_agregados_propria($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/agregados-propria',
-        array('placa' => $param, 'link' => 'agregados-propria'),
-        'SERPRO Consultas: AGREGADOS BASICA PROPRIA'
+        array('placa' => $placa, 'link' => 'agregados-propria'),
+        'SERPRO Consultas: VEICULAR AGREGADOS'
     );
 }
 
-function serc_apifull_lookup_bin_estadual($estado)
+function serc_apifull_ic_bin_estadual($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-bin-estadual',
-        array('estado' => $estado, 'link' => 'ic-bin-estadual'),
-        'SERPRO Consultas: BIN ESTADUAL'
+        array('placa' => $placa, 'link' => 'ic-bin-estadual'),
+        'SERPRO Consultas: VEICULAR BIN ESTADUAL'
     );
 }
 
-function serc_apifull_lookup_bin_nacional($cpf)
+function serc_apifull_ic_bin_nacional($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-bin-nacional',
-        array('cpf' => $cpf, 'link' => 'ic-bin-nacional'),
-        'SERPRO Consultas: BIN NACIONAL'
+        array('placa' => $placa, 'link' => 'ic-bin-nacional'),
+        'SERPRO Consultas: VEICULAR BIN NACIONAL'
     );
 }
 
-function serc_apifull_lookup_foto_leilao($leilao_id)
+function serc_apifull_ic_foto_leilao($placa)
 {
+    // Note: Documentation says payload is {"placa": "..."} for ic-foto-leilao?
+    // User task said doc had `leilaoId` for `foto_leilao`.
+    // But I must check MY plan which said `/api/ic-foto-leilao` with `placa`.
+    // The previous code had `foto_leilao` endpoint, this is `ic-foto-leilao`.
+    // Assuming documentation is correct with `placa`.
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-foto-leilao',
-        array('leilaoId' => $leilao_id, 'link' => 'ic-foto-leilao'),
+        array('placa' => $placa, 'link' => 'ic-foto-leilao'),
         'SERPRO Consultas: FOTO LEILAO'
     );
 }
 
-function serc_apifull_lookup_leilao($filtro)
+function serc_apifull_leilao($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/leilao',
-        array('filtro' => $filtro, 'link' => 'leilao'),
+        array('placa' => $placa, 'link' => 'leilao'),
         'SERPRO Consultas: LEILAO'
     );
 }
 
-function serc_apifull_lookup_leilao_score_perda_total($placa)
+function serc_apifull_ic_leilao_score($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-leilao-score',
         array('placa' => $placa, 'link' => 'ic-leilao-score'),
-        'SERPRO Consultas: LEILAO SCORE PERDA TOTAL'
+        'SERPRO Consultas: LEILAO SCORE'
     );
 }
 
-function serc_apifull_lookup_laudo_veicular($placa)
+function serc_apifull_ic_laudo_veicular($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-laudo-veicular',
@@ -1480,21 +1439,7 @@ function serc_apifull_lookup_laudo_veicular($placa)
     );
 }
 
-function serc_apifull_lookup_laudo_veicular_params($placa, $chassi)
-{
-    $payload = array('link' => 'ic-laudo-veicular');
-    if (!empty($placa))
-        $payload['placa'] = $placa;
-    if (!empty($chassi))
-        $payload['chassi'] = $chassi;
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-laudo-veicular',
-        $payload,
-        'SERPRO Consultas: LAUDO VEICULAR'
-    );
-}
-
-function serc_apifull_lookup_historico_roubo_furto($placa)
+function serc_apifull_ic_historico_roubo_furto($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-historico-roubo-furto',
@@ -1503,52 +1448,55 @@ function serc_apifull_lookup_historico_roubo_furto($placa)
     );
 }
 
-function serc_apifull_lookup_indice_risco_veicular($placa)
+function serc_apifull_inde_risco($placa)
 {
+    // Correct endpoint from docs: /api/inde-risco or /api/indice-risco?
+    // Plan said /api/inde-risco with link 'indice-risco'?
+    // Browser check said: URL /api/inde-risco, link 'indice-risco'.
     return serc_apifull_post_extract_pdf_base64(
         '/api/inde-risco',
         array('placa' => $placa, 'link' => 'indice-risco'),
-        'SERPRO Consultas: INDICE RISCO VEICULAR'
+        'SERPRO Consultas: INDICE RISCO'
     );
 }
 
-function serc_apifull_lookup_licenciamento_anterior($placa)
+function serc_apifull_ic_licenciamento_anterior($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-licenciamento',
-        array('placa' => $placa, 'link' => 'ic-licenciamento'),
+        '/api/ic-licenciamento-anterior',
+        array('placa' => $placa, 'link' => 'ic-licenciamento-anterior'),
         'SERPRO Consultas: LICENCIAMENTO ANTERIOR'
     );
 }
 
-function serc_apifull_lookup_ic_proprietario_atual($placa)
+function serc_apifull_ic_proprietario_atual($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-proprietario-atual',
         array('placa' => $placa, 'link' => 'ic-proprietario-atual'),
-        'SERPRO Consultas: IC PROPRIETARIO ATUAL'
+        'SERPRO Consultas: PROPRIETARIO ATUAL'
     );
 }
 
-function serc_apifull_lookup_recall($modelo)
+function serc_apifull_ic_recall($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-recall',
-        array('modelo' => $modelo, 'link' => 'ic-recall'),
+        array('placa' => $placa, 'link' => 'ic-recall'),
         'SERPRO Consultas: RECALL'
     );
 }
 
-function serc_apifull_lookup_gravame_detalhamento($placa)
+function serc_apifull_ic_gravame($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/gravame-detalhamento',
-        array('placa' => $placa, 'link' => 'gravame-detalhamento'),
-        'SERPRO Consultas: GRAVAME DETALHAMENTO'
+        '/api/ic-gravame',
+        array('placa' => $placa, 'link' => 'ic-gravame'),
+        'SERPRO Consultas: GRAVAME'
     );
 }
 
-function serc_apifull_lookup_renajud($placa)
+function serc_apifull_ic_renajud($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-renajud',
@@ -1557,7 +1505,7 @@ function serc_apifull_lookup_renajud($placa)
     );
 }
 
-function serc_apifull_lookup_renainf($placa)
+function serc_apifull_ic_renainf($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-renainf',
@@ -1566,158 +1514,192 @@ function serc_apifull_lookup_renainf($placa)
     );
 }
 
-function serc_apifull_lookup_fipe($marca, $modelo, $ano)
+function serc_apifull_fipe($placa)
 {
+    // Using simple FIPE lookup (usually requires more than just placa, but documentation maps to what?)
+    // Docs check needed? My plan said {placa}.
     return serc_apifull_post_extract_pdf_base64(
         '/api/fipe',
-        array('marca' => $marca, 'modelo' => $modelo, 'ano' => $ano, 'link' => 'fipe'),
+        array('placa' => $placa, 'link' => 'fipe'),
         'SERPRO Consultas: FIPE'
     );
 }
 
-function serc_apifull_lookup_sinistro($placa)
+function serc_apifull_sinistro($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-sinistro',
-        array('placa' => $placa, 'link' => 'ic-sinistro'),
+        '/api/sinistro',
+        array('placa' => $placa, 'link' => 'sinistro'),
         'SERPRO Consultas: SINISTRO'
     );
 }
 
-function serc_apifull_lookup_serasa_premium($cpf)
+function serc_apifull_csv_completo($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/r-srs-premium',
-        array('document' => $cpf, 'link' => 'r-srs-premium'),
-        'SERPRO Consultas: SERASA PREMIUM'
+        '/api/csv-renainf-renajud-recall-bin-proprietario',
+        array('placa' => $placa, 'link' => 'csv-renainf-renajud-recall-bin-proprietario'),
+        'SERPRO Consultas: CSV'
     );
 }
 
-function serc_apifull_lookup_ic_basico_score($cpf)
+function serc_apifull_crlv($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-basico-score',
-        array('cpf' => $cpf, 'link' => 'ic-basico-score'),
-        'SERPRO Consultas: IC BASICO SCORE'
+        '/api/crlv',
+        array('placa' => $placa, 'link' => 'crlv'),
+        'SERPRO Consultas: CRLV'
     );
 }
 
-function serc_apifull_lookup_scpc_boa_vista($cpf)
+function serc_apifull_roubo_furto($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/r-bv-basica',
-        array('document' => $cpf, 'link' => 'r-bv-basica'),
-        'SERPRO Consultas: SCPC BOA VISTA'
+        '/api/roubo-furto',
+        array('placa' => $placa, 'link' => 'roubo-furto'),
+        'SERPRO Consultas: ROUBO FURTO'
     );
 }
 
-function serc_apifull_lookup_bacen($cpf)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-bacen',
-        array('document' => $cpf, 'link' => 'ic-bacen'),
-        'SERPRO Consultas: BACEN'
-    );
-}
+// ==========================================
+// 3. DIVIDAS E CREDITO
+// ==========================================
 
-function serc_apifull_lookup_quod($cpf)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-quod',
-        array('document' => $cpf, 'link' => 'ic-quod'),
-        'SERPRO Consultas: QUOD'
-    );
-}
-
-function serc_apifull_lookup_spc_brasil_cenprot($cpf)
+function serc_apifull_cp_spc_cenprot($document)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/cp-spc-cenprot',
-        array('document' => $cpf, 'link' => 'cp-spc-cenprot'),
-        'SERPRO Consultas: SPC BRASIL CENPROT'
+        array('document' => $document, 'link' => 'cp-spc-cenprot'),
+        'SERPRO Consultas: SPC CENPROT'
     );
 }
 
-function serc_apifull_lookup_spc_brasil_serasa($cpf)
+function serc_apifull_r_spc_srs($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/r-spc-srs',
         array('cpf' => $cpf, 'link' => 'r-spc-srs'),
-        'SERPRO Consultas: SPC BRASIL SERASA'
+        'SERPRO Consultas: SPC SERASA'
     );
 }
 
-function serc_apifull_lookup_dividas_bancrias_cpf($cpf)
+function serc_apifull_cp_serasa_premium_v2($document)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/dividas-bancrias-cpf',
-        array('cpf' => $cpf, 'link' => 'dividas-bancrias-cpf'),
-        'SERPRO Consultas: DIVIDAS BANCRIAS CPF'
+        '/api/v2/cp-serasa-premium',
+        array('document' => $document, 'link' => 'cp-serasa-premium'), // Note: v2 might prefer 'link' without v2 or with? Usually same as endpoint logic.
+        // Assuming link 'cp-serasa-premium' based on pattern.
+        'SERPRO Consultas: SERASA PREMIUM V2'
     );
 }
 
-function serc_apifull_lookup_cadastrais_score_dividas($cpf)
+function serc_apifull_cp_boa_vista_completa($document)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/r-cadastrais-score-dividas',
-        array('document' => $cpf, 'link' => 'r-cadastrais-score-dividas'),
+        '/api/cp-boa-vista-completa',
+        array('document' => $document, 'link' => 'cp-boa-vista-completa'),
+        'SERPRO Consultas: BOAVISTA COMPLETA'
+    );
+}
+
+function serc_apifull_r_bv_basica($document)
+{
+    return serc_apifull_post_extract_pdf_base64(
+        '/api/r-bv-basica',
+        array('document' => $document, 'link' => 'r-bv-basica'),
+        'SERPRO Consultas: BOAVISTA BASICA'
+    );
+}
+
+function serc_apifull_cp_boa_vista_plus_v2($document)
+{
+    return serc_apifull_post_extract_pdf_base64(
+        '/api/v2/cp-boa-vista-plus',
+        array('document' => $document, 'link' => 'cp-boa-vista-plus'),
+        'SERPRO Consultas: BOAVISTA PLUS V2'
+    );
+}
+
+function serc_apifull_cp_score_dividas($document)
+{
+    return serc_apifull_post_extract_pdf_base64(
+        '/api/cp-score-dividas',
+        array('document' => $document, 'link' => 'cp-score-dividas'),
+        'SERPRO Consultas: SCORE DIVIDAS'
+    );
+}
+
+function serc_apifull_cp_cadastrais_score_dividas($document)
+{
+    return serc_apifull_post_extract_pdf_base64(
+        '/api/cp-cadastrais-score-dividas',
+        array('document' => $document, 'link' => 'cp-cadastrais-score-dividas'),
         'SERPRO Consultas: CADASTRAIS SCORE DIVIDAS'
     );
 }
 
-function serc_apifull_lookup_cadastrais_score_dividas_cp($cpf)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/cp-cadastrais-score-dividas',
-        array('document' => $cpf, 'link' => 'cp-cadastrais-score-dividas'),
-        'SERPRO Consultas: CADASTRAIS SCORE DIVIDAS CP'
-    );
-}
-
-function serc_apifull_lookup_scr_bacen_score($cpf)
+function serc_apifull_ic_bacen($document)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-bacen',
-        array('document' => $cpf, 'link' => 'ic-bacen'),
-        'SERPRO Consultas: SCR BACEN SCORE'
+        array('document' => $document, 'link' => 'ic-bacen'),
+        'SERPRO Consultas: SCR BACEN'
     );
 }
 
-function serc_apifull_lookup_protesto_nacional_cenprot($cpf)
+function serc_apifull_ac_protesto($document)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ac-protesto',
-        array('document' => $cpf, 'link' => 'ac-protesto'),
-        'SERPRO Consultas: PROTESTO NACIONAL CENPROT'
+        array('document' => $document, 'link' => 'ac-protesto'),
+        'SERPRO Consultas: PROTESTO'
     );
 }
 
-function serc_apifull_lookup_r_acoes_e_processos_judiciais($cpf)
+function serc_apifull_ic_quod($document)
+{
+    return serc_apifull_post_extract_pdf_base64(
+        '/api/ic-quod',
+        array('document' => $document, 'link' => 'ic-quod'),
+        'SERPRO Consultas: QUOD'
+    );
+}
+
+// ==========================================
+// 4. JURIDICO
+// ==========================================
+
+function serc_apifull_r_acoes_processos($document)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/r-acoes-e-processos-judiciais',
-        array('cpf' => $cpf, 'link' => 'r-acoes-e-processos-judiciais'),
-        'SERPRO Consultas: ACOES E PROCESSOS JUDICIAIS'
+        array('document' => $document, 'link' => 'r-acoes-e-processos-judiciais'),
+        'SERPRO Consultas: ACOES PROCESSOS'
     );
 }
 
-function serc_apifull_lookup_dossie_juridico($cpf)
+function serc_apifull_dossie_juridico($document)
 {
+    // Check if doc is CPF or CNPJ
+    // API endpoint is /api/dossie-juridico
+    // Payload usually uses 'document' or 'cpf'/'cnpj' depending on implementation
     return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-dossie-juridico',
-        array('cpf' => $cpf, 'link' => 'ic-dossie-juridico'),
+        '/api/dossie-juridico',
+        array('document' => $document, 'link' => 'dossie-juridico'),
         'SERPRO Consultas: DOSSIE JURIDICO'
     );
 }
 
-function serc_apifull_lookup_certidao_nacional_debitos_trabalhistas($cpf)
+function serc_apifull_cndt($document)
 {
     return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-cndt',
-        array('document' => $cpf, 'link' => 'ic-cndt'),
+        '/api/cndt',
+        array('document' => $document, 'link' => 'cndt'),
         'SERPRO Consultas: CNDT'
     );
 }
+
+
 
 function serc_lookup()
 {
@@ -1726,348 +1708,304 @@ function serc_lookup()
     $user_id = get_current_user_id();
     if (!$user_id)
         wp_send_json_error('no_user', 403);
+
+    // Rate Limit (30 lookups per hour per user)
     $k = 'serc_rl_lookup_' . $user_id;
     $c = intval(get_transient($k));
     if ($c >= 30)
         wp_send_json_error('rate_limit', 429);
     set_transient($k, $c + 1, 3600);
+
     $type = sanitize_text_field($_POST['type'] ?? '');
-    // Valida entradas por tipo
+
+    // Load config to check if type exists and get credit cost
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+    $config_item = serc_get_integration_by_id($type);
+    if (!$config_item)
+        wp_send_json_error('invalid_type', 400);
+
+    // Prepare inputs (cleaning)
+    $cpf = preg_replace('/\D+/', '', $_POST['cpf'] ?? '');
+    $cnpj = preg_replace('/\D+/', '', $_POST['cnpj'] ?? '');
+    $document = preg_replace('/\D+/', '', $_POST['document'] ?? ''); // CPF or CNPJ
+    $placa = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $_POST['placa'] ?? ''));
+    $phone_input = preg_replace('/\D+/', '', $_POST['phone'] ?? ''); // if frontend sends full phone
+    // If frontend sends ddd/telefone separate (as per old config), combine them handling both cases
+    $ddd = preg_replace('/\D+/', '', $_POST['ddd'] ?? '');
+    $telefone = preg_replace('/\D+/', '', $_POST['telefone'] ?? '');
+    if (empty($phone_input) && !empty($ddd) && !empty($telefone)) {
+        $phone_input = $ddd . $telefone;
+    }
+
+    // Input Validation based on type
     switch ($type) {
-        case 'cnpj':
-            header('Cache-Control: no-cache');
-            $cnpj = preg_replace('/\D+/', '', $_POST['cnpj'] ?? '');
-            if (strlen($cnpj) !== 14)
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'cpf':
-            // Ensure no caching for CPF external API request
-            header('Cache-Control: no-cache');
-            $cpf = preg_replace('/\D+/', '', $_POST['cpf'] ?? '');
+        // --- DADOS CADASTRAIS ---
+        case 'pf_dadosbasicos':
+        case 'ic_cpf_completo':
+        case 'r_cpf_completo':
             if (strlen($cpf) !== 11)
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'cpf_renda':
-            header('Cache-Control: no-cache');
-            $cpf = preg_replace('/\D+/', '', $_POST['cpf'] ?? '');
-            if (strlen($cpf) !== 11)
-                wp_send_json_error('invalid_input', 400);
+                wp_send_json_error('invalid_cpf', 400);
             break;
         case 'ic_nome':
-            header('Cache-Control: no-cache');
             $name = sanitize_text_field($_POST['name'] ?? '');
             $state = strtoupper(preg_replace('/[^A-Za-z]/', '', $_POST['state'] ?? ''));
             if (empty($name) || strlen($state) !== 2)
                 wp_send_json_error('invalid_input', 400);
             break;
         case 'ic_telefone':
-            header('Cache-Control: no-cache');
-            $ddd = preg_replace('/\D+/', '', $_POST['ddd'] ?? '');
-            $telefone = preg_replace('/\D+/', '', $_POST['telefone'] ?? '');
-            $state = strtoupper(preg_replace('/[^A-Za-z]/', '', $_POST['state'] ?? ''));
-            if (!preg_match('/^\d{2}$/', $ddd))
-                wp_send_json_error('invalid_input', 400);
-            if (!preg_match('/^\d{8,9}$/', $telefone))
-                wp_send_json_error('invalid_input', 400);
-            if (strlen($state) !== 2)
-                wp_send_json_error('invalid_input', 400);
+            if (strlen($phone_input) < 10)
+                wp_send_json_error('invalid_phone', 400);
             break;
-        case 'ic_placa':
-            header('Cache-Control: no-cache');
-            $placa = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $_POST['placa'] ?? ''));
-            if (!preg_match('/^([A-Z]{3}\d{4}|[A-Z]{3}[0-9A-Z][0-9]{2})$/', $placa))
-                wp_send_json_error('invalid_input', 400);
+        case 'cnpj':
+            if (strlen($cnpj) !== 14)
+                wp_send_json_error('invalid_cnpj', 400);
             break;
-        case 'ic_cnh':
-            header('Cache-Control: no-cache');
-            $cpf = preg_replace('/\D+/', '', $_POST['cpf'] ?? '');
-            if (strlen($cpf) !== 11)
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'agregados_basica_propria':
-            header('Cache-Control: no-cache');
-            $param = sanitize_text_field($_POST['param'] ?? '');
-            if (empty($param))
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'bin_estadual':
-            header('Cache-Control: no-cache');
-            $estado = strtoupper(preg_replace('/[^A-Za-z]/', '', $_POST['estado'] ?? ''));
-            if (strlen($estado) !== 2)
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'bin_nacional':
-            header('Cache-Control: no-cache');
-            $cpf = preg_replace('/\D+/', '', $_POST['cpf'] ?? '');
-            if (strlen($cpf) !== 11)
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'foto_leilao':
-            header('Cache-Control: no-cache');
-            $leilao_id = preg_replace('/\D+/', '', $_POST['leilaoId'] ?? '');
-            if (empty($leilao_id))
-                wp_send_json_error('invalid_input', 400);
-            break;
+
+        // --- VEICULAR ---
+        case 'agregados_propria':
+        case 'ic_bin_estadual':
+        case 'ic_bin_nacional':
+        case 'ic_foto_leilao':
         case 'leilao':
-            header('Cache-Control: no-cache');
-            $filtro = sanitize_text_field($_POST['filtro'] ?? '');
-            if (empty($filtro))
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'leilao_score_perda_total':
-        case 'historico_roubo_furto':
-        case 'indice_risco_veicular':
-        case 'licenciamento_anterior':
+        case 'ic_leilao_score':
+        case 'ic_laudo_veicular':
+        case 'ic_historico_roubo_furto':
+        case 'inde_risco':
+        case 'ic_licenciamento_anterior':
         case 'ic_proprietario_atual':
-        case 'gravame_detalhamento':
-        case 'renajud':
-        case 'renainf_placa':
-        case 'sinistro':
-            header('Cache-Control: no-cache');
-            $placa = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $_POST['placa'] ?? ''));
-            if (!preg_match('/^([A-Z]{3}\d{4}|[A-Z]{3}[0-9A-Z][0-9]{2})$/', $placa))
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'recall':
-            header('Cache-Control: no-cache');
-            $modelo = sanitize_text_field($_POST['modelo'] ?? '');
-            if (empty($modelo))
-                wp_send_json_error('invalid_input', 400);
-            break;
+        case 'ic_recall':
+        case 'ic_gravame':
+        case 'ic_renajud':
+        case 'ic_renainf':
         case 'fipe':
-            header('Cache-Control: no-cache');
-            $marca = sanitize_text_field($_POST['marca'] ?? '');
-            $modelo = sanitize_text_field($_POST['modelo'] ?? '');
-            $ano = preg_replace('/\D+/', '', $_POST['ano'] ?? '');
-            if (empty($marca) || empty($modelo) || strlen($ano) !== 4)
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'serasa_premium':
-        case 'ic_basico_score':
-        case 'scpc_boa_vista':
-        case 'bacen':
-        case 'quod':
-        case 'spc_brasil_cenprot':
-        case 'spc_brasil_serasa':
-        case 'dividas_bancrias_cpf':
-        case 'cadastrais_score_dividas':
-        case 'cadastrais_score_dividas_cp':
-        case 'scr_bacen_score':
-        case 'protesto_nacional_cenprot':
-        case 'r_acoes_e_processos_judiciais':
-        case 'dossie_juridico_cpf':
-        case 'certidao_nacional_debitos_trabalhistas':
-            header('Cache-Control: no-cache');
-            $cpf = preg_replace('/\D+/', '', $_POST['cpf'] ?? '');
-            if (strlen($cpf) !== 11)
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'dossie_juridico':
-            $doc_type = sanitize_text_field($_POST['doc_type'] ?? 'cpf');
-            $document = preg_replace('/\D+/', '', $_POST['document'] ?? '');
-            if ($doc_type === 'cpf') {
-                if (strlen($document) !== 11)
-                    wp_send_json_error('invalid_input', 400);
-            } else {
-                if (strlen($document) !== 14)
-                    wp_send_json_error('invalid_input', 400);
-            }
-            break;
+        case 'sinistro':
+        case 'csv_completo':
         case 'crlv':
-        case 'proprietario_placa':
-            $placa = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $_POST['placa'] ?? ''));
+        case 'roubo_furto':
             if (!preg_match('/^([A-Z]{3}\d{4}|[A-Z]{3}[0-9A-Z][0-9]{2})$/', $placa))
-                wp_send_json_error('invalid_input', 400);
+                wp_send_json_error('invalid_placa', 400);
             break;
-        case 'renainf':
-            $placa = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $_POST['placa'] ?? ''));
-            $renavam = preg_replace('/\D+/', '', $_POST['renavam'] ?? '');
-            if (!preg_match('/^([A-Z]{3}\d{4}|[A-Z]{3}[0-9A-Z][0-9]{2})$/', $placa))
-                wp_send_json_error('invalid_input', 400);
-            if (!preg_match('/^\d{9,11}$/', $renavam))
-                wp_send_json_error('invalid_input', 400);
+
+        // --- DIVIDAS E CREDITO & JURIDICO (Document based) ---
+        case 'cp_spc_cenprot':
+        case 'cp_serasa_premium_v2':
+        case 'cp_boa_vista_completa':
+        case 'r_bv_basica':
+        case 'cp_boa_vista_plus_v2':
+        case 'cp_score_dividas':
+        case 'cp_cadastrais_score_dividas':
+        case 'ic_bacen':
+        case 'ac_protesto':
+        case 'ic_quod':
+        case 'r_acoes_processos':
+        case 'dossie_juridico':
+        case 'cndt':
+            if (strlen($document) !== 11 && strlen($document) !== 14)
+                wp_send_json_error('invalid_document', 400);
             break;
-        case 'gravame':
-            $chassi = strtoupper(preg_replace('/[^A-HJ-NPR-Z0-9]/', '', $_POST['chassi'] ?? ''));
-            if (!preg_match('/^[A-HJ-NPR-Z0-9]{17}$/', $chassi))
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'laudo_veicular':
-            $placa = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $_POST['placa'] ?? ''));
-            $chassi = strtoupper(preg_replace('/[^A-HJ-NPR-Z0-9]/', '', $_POST['chassi'] ?? ''));
-            $placa_ok = $placa && preg_match('/^([A-Z]{3}\d{4}|[A-Z]{3}[0-9A-Z][0-9]{2})$/', $placa);
-            $chassi_ok = $chassi && preg_match('/^[A-HJ-NPR-Z0-9]{17}$/', $chassi);
-            if (!$placa_ok && !$chassi_ok)
-                wp_send_json_error('invalid_input', 400);
-            break;
-        case 'scpc_bv_plus_v2':
-        case 'srs_premium':
-            $cpf = preg_replace('/\D+/', '', $_POST['cpf'] ?? '');
+
+        case 'r_spc_srs':
             if (strlen($cpf) !== 11)
-                wp_send_json_error('invalid_input', 400);
+                wp_send_json_error('invalid_cpf', 400);
             break;
+
         default:
-            wp_send_json_error('invalid_type', 400);
+            // If type is valid in config but not handled here, prevent execution
+            header('Cache-Control: no-cache');
+            // Proceed if we want to allow generic handling, but strictly we should handle all.
+            // Given the plan, we covered all.
+            break;
     }
 
-    // Check if user HAS quota before calling the API (don't debit yet)
-    // Usa débito global ao invés de configuração por produto
-    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
-    $debit_needed = serc_get_global_debit($type);
+    // Checking Credits
+    $debit_str = str_replace(',', '.', $config_item['value'] ?? '0');
+    $debit_needed = floatval($debit_str);
     $current_balance = floatval(get_user_meta($user_id, 'serc_credit_balance', true));
-    $has_quota = ($debit_needed <= 0) || ($current_balance >= $debit_needed);
 
-    if (!$has_quota) {
-        $purchase_url = '';
-        if (function_exists('wc_get_page_permalink')) {
-            $purchase_url = wc_get_page_permalink('shop');
-        } elseif (function_exists('wc_get_page_id')) {
-            $shop_id = wc_get_page_id('shop');
-            if ($shop_id)
-                $purchase_url = get_permalink($shop_id);
-        }
-        if (empty($purchase_url)) {
-            $purchase_url = home_url('/');
-        }
-        wp_send_json_error(array('code' => 'no_quota', 'purchase_url' => $purchase_url), 402);
+    if ($debit_needed > 0 && $current_balance < $debit_needed) {
+        wp_send_json_error(array(
+            'message' => 'Saldo insuficiente. Você tem ' . number_format($current_balance, 2, ',', '.') . ' créditos e esta consulta custa ' . number_format($debit_needed, 2, ',', '.') . '.',
+            'code' => 'insufficient_funds',
+            'required' => $debit_needed,
+            'balance' => $current_balance
+        ), 402);
     }
 
+    // Dispatch API Call
     global $serc_last_api_response;
     $serc_last_api_response = null;
     $api_result = null;
-    if ($type === 'cpf') {
-        $api_result = serc_apifull_post_extract_pdf_base64(
-            '/api/ic-cpf-completo',
-            array('cpf' => $cpf, 'link' => 'ic-cpf-completo'),
-            'SERPRO Consultas: CPF'
-        );
-    } elseif ($type === 'cpf_renda') {
-        $api_result = serc_apifull_lookup_cpf_renda($cpf);
-    } elseif ($type === 'ic_nome') {
-        $api_result = serc_apifull_lookup_ic_nome($name, $state);
-    } elseif ($type === 'ic_telefone') {
-        $api_result = serc_apifull_lookup_ic_telefone($ddd, $telefone, $state);
-    } elseif ($type === 'ic_placa') {
-        $api_result = serc_apifull_lookup_ic_placa($placa);
-    } elseif ($type === 'ic_cnh') {
-        $api_result = serc_apifull_lookup_ic_cnh($cpf);
-    } elseif ($type === 'cnpj') {
-        $api_result = serc_apifull_lookup_cnpj($cnpj);
-    } elseif ($type === 'crlv') {
-        $api_result = serc_apifull_lookup_crlv($placa);
-    } elseif ($type === 'proprietario_placa') {
-        $api_result = serc_apifull_lookup_proprietario_placa($placa);
-    } elseif ($type === 'gravame') {
-        $api_result = serc_apifull_lookup_gravame($chassi);
-    } elseif ($type === 'renainf') {
-        $api_result = serc_apifull_lookup_renainf_placa_renavam($placa, $renavam);
-    } elseif ($type === 'scpc_bv_plus_v2') {
-        $api_result = serc_apifull_lookup_scpc_bv_plus_v2($cpf);
-    } elseif ($type === 'srs_premium') {
-        $api_result = serc_apifull_lookup_srs_premium($cpf);
-    } elseif ($type === 'agregados_basica_propria') {
-        $api_result = serc_apifull_lookup_agregados_basica_propria($param);
-    } elseif ($type === 'bin_estadual') {
-        $api_result = serc_apifull_lookup_bin_estadual($estado);
-    } elseif ($type === 'bin_nacional') {
-        $api_result = serc_apifull_lookup_bin_nacional($cpf);
-    } elseif ($type === 'foto_leilao') {
-        $api_result = serc_apifull_lookup_foto_leilao($leilao_id);
-    } elseif ($type === 'leilao') {
-        $api_result = serc_apifull_lookup_leilao($filtro);
-    } elseif ($type === 'leilao_score_perda_total') {
-        $api_result = serc_apifull_lookup_leilao_score_perda_total($placa);
-    } elseif ($type === 'historico_roubo_furto') {
-        $api_result = serc_apifull_lookup_historico_roubo_furto($placa);
-    } elseif ($type === 'indice_risco_veicular') {
-        $api_result = serc_apifull_lookup_indice_risco_veicular($placa);
-    } elseif ($type === 'licenciamento_anterior') {
-        $api_result = serc_apifull_lookup_licenciamento_anterior($placa);
-    } elseif ($type === 'ic_proprietario_atual') {
-        $api_result = serc_apifull_lookup_ic_proprietario_atual($placa);
-    } elseif ($type === 'laudo_veicular') {
-        $api_result = serc_apifull_lookup_laudo_veicular_params(!empty($placa_ok) ? $placa : '', !empty($chassi_ok) ? $chassi : '');
-    } elseif ($type === 'recall') {
-        $api_result = serc_apifull_lookup_recall($modelo);
-    } elseif ($type === 'gravame_detalhamento') {
-        $api_result = serc_apifull_lookup_gravame_detalhamento($placa);
-    } elseif ($type === 'renajud') {
-        $api_result = serc_apifull_lookup_renajud($placa);
-    } elseif ($type === 'renainf_placa') {
-        $api_result = serc_apifull_lookup_renainf($placa);
-    } elseif ($type === 'sinistro') {
-        $api_result = serc_apifull_lookup_sinistro($placa);
-    } elseif ($type === 'fipe') {
-        $api_result = serc_apifull_lookup_fipe($marca, $modelo, $ano);
-    } elseif ($type === 'serasa_premium') {
-        $api_result = serc_apifull_lookup_serasa_premium($cpf);
-    } elseif ($type === 'ic_basico_score') {
-        $api_result = serc_apifull_lookup_ic_basico_score($cpf);
-    } elseif ($type === 'scpc_boa_vista') {
-        $api_result = serc_apifull_lookup_scpc_boa_vista($cpf);
-    } elseif ($type === 'bacen') {
-        $api_result = serc_apifull_lookup_bacen($cpf);
-    } elseif ($type === 'quod') {
-        $api_result = serc_apifull_lookup_quod($cpf);
-    } elseif ($type === 'spc_brasil_cenprot') {
-        $api_result = serc_apifull_lookup_spc_brasil_cenprot($cpf);
-    } elseif ($type === 'spc_brasil_serasa') {
-        $api_result = serc_apifull_lookup_spc_brasil_serasa($cpf);
-    } elseif ($type === 'dividas_bancrias_cpf') {
-        $api_result = serc_apifull_lookup_dividas_bancrias_cpf($cpf);
-    } elseif ($type === 'cadastrais_score_dividas') {
-        $api_result = serc_apifull_lookup_cadastrais_score_dividas($cpf);
-    } elseif ($type === 'cadastrais_score_dividas_cp') {
-        $api_result = serc_apifull_lookup_cadastrais_score_dividas_cp($cpf);
-    } elseif ($type === 'scr_bacen_score') {
-        $api_result = serc_apifull_lookup_scr_bacen_score($cpf);
-    } elseif ($type === 'protesto_nacional_cenprot') {
-        $api_result = serc_apifull_lookup_protesto_nacional_cenprot($cpf);
-    } elseif ($type === 'r_acoes_e_processos_judiciais') {
-        $api_result = serc_apifull_lookup_r_acoes_e_processos_judiciais($cpf);
-    } elseif ($type === 'dossie_juridico_cpf') {
-        $api_result = serc_apifull_lookup_dossie_juridico($cpf);
-    } elseif ($type === 'dossie_juridico') {
-        $payload_key = ($doc_type === 'cpf') ? 'cpf' : 'cnpj';
-        $api_result = serc_apifull_post_extract_pdf_base64(
-            '/api/ic-dossie-juridico',
-            array($payload_key => $document, 'link' => 'ic-dossie-juridico'),
-            'SERPRO Consultas: DOSSIE JURIDICO'
-        );
-    } elseif ($type === 'certidao_nacional_debitos_trabalhistas') {
-        $api_result = serc_apifull_lookup_certidao_nacional_debitos_trabalhistas($cpf);
+
+    // Dispatcher
+    switch ($type) {
+        // 1. Dados Cadastrais
+        case 'pf_dadosbasicos':
+            $api_result = serc_apifull_pf_dadosbasicos($cpf);
+            break;
+        case 'ic_cpf_completo':
+            $api_result = serc_apifull_ic_cpf_completo($cpf);
+            break;
+        case 'r_cpf_completo':
+            $api_result = serc_apifull_r_cpf_completo($cpf);
+            break;
+        case 'ic_nome':
+            $name = sanitize_text_field($_POST['name'] ?? '');
+            $state = strtoupper(preg_replace('/[^A-Za-z]/', '', $_POST['state'] ?? ''));
+            $api_result = serc_apifull_ic_nome($name, $state);
+            break;
+        case 'ic_telefone':
+            $api_result = serc_apifull_ic_telefone($phone_input);
+            break;
+        case 'cnpj':
+            $api_result = serc_apifull_cnpj($cnpj);
+            break;
+
+        // 2. Veicular
+        case 'agregados_propria':
+            $api_result = serc_apifull_agregados_propria($placa);
+            break;
+        case 'ic_bin_estadual':
+            $api_result = serc_apifull_ic_bin_estadual($placa);
+            break;
+        case 'ic_bin_nacional':
+            $api_result = serc_apifull_ic_bin_nacional($placa);
+            break;
+        case 'ic_foto_leilao':
+            $api_result = serc_apifull_ic_foto_leilao($placa);
+            break;
+        case 'leilao':
+            $api_result = serc_apifull_leilao($placa);
+            break;
+        case 'ic_leilao_score':
+            $api_result = serc_apifull_ic_leilao_score($placa);
+            break;
+        case 'ic_laudo_veicular':
+            $api_result = serc_apifull_ic_laudo_veicular($placa);
+            break;
+        case 'ic_historico_roubo_furto':
+            $api_result = serc_apifull_ic_historico_roubo_furto($placa);
+            break;
+        case 'inde_risco':
+            $api_result = serc_apifull_inde_risco($placa);
+            break;
+        case 'ic_licenciamento_anterior':
+            $api_result = serc_apifull_ic_licenciamento_anterior($placa);
+            break;
+        case 'ic_proprietario_atual':
+            $api_result = serc_apifull_ic_proprietario_atual($placa);
+            break;
+        case 'ic_recall':
+            $api_result = serc_apifull_ic_recall($placa);
+            break;
+        case 'ic_gravame':
+            $api_result = serc_apifull_ic_gravame($placa);
+            break;
+        case 'ic_renajud':
+            $api_result = serc_apifull_ic_renajud($placa);
+            break;
+        case 'ic_renainf':
+            $api_result = serc_apifull_ic_renainf($placa);
+            break;
+        case 'fipe':
+            $api_result = serc_apifull_fipe($placa);
+            break;
+        case 'sinistro':
+            $api_result = serc_apifull_sinistro($placa);
+            break;
+        case 'csv_completo':
+            $api_result = serc_apifull_csv_completo($placa);
+            break;
+        case 'crlv':
+            $api_result = serc_apifull_crlv($placa);
+            break;
+        case 'roubo_furto':
+            $api_result = serc_apifull_roubo_furto($placa);
+            break;
+
+        // 3. Dividas e Credito
+        case 'cp_spc_cenprot':
+            $api_result = serc_apifull_cp_spc_cenprot($document);
+            break;
+        case 'r_spc_srs':
+            $api_result = serc_apifull_r_spc_srs($cpf);
+            break;
+        case 'cp_serasa_premium_v2':
+            $api_result = serc_apifull_cp_serasa_premium_v2($document);
+            break;
+        case 'cp_boa_vista_completa':
+            $api_result = serc_apifull_cp_boa_vista_completa($document);
+            break;
+        case 'r_bv_basica':
+            $api_result = serc_apifull_r_bv_basica($document);
+            break;
+        case 'cp_boa_vista_plus_v2':
+            $api_result = serc_apifull_cp_boa_vista_plus_v2($document);
+            break;
+        case 'cp_score_dividas':
+            $api_result = serc_apifull_cp_score_dividas($document);
+            break;
+        case 'cp_cadastrais_score_dividas':
+            $api_result = serc_apifull_cp_cadastrais_score_dividas($document);
+            break;
+        case 'ic_bacen':
+            $api_result = serc_apifull_ic_bacen($document);
+            break;
+        case 'ac_protesto':
+            $api_result = serc_apifull_ac_protesto($document);
+            break;
+        case 'ic_quod':
+            $api_result = serc_apifull_ic_quod($document);
+            break;
+
+        // 4. Juridico
+        case 'r_acoes_processos':
+            $api_result = serc_apifull_r_acoes_processos($document);
+            break;
+        case 'dossie_juridico':
+            $api_result = serc_apifull_dossie_juridico($document);
+            break;
+        case 'cndt':
+            $api_result = serc_apifull_cndt($document);
+            break;
+
+        default:
+            wp_send_json_error('not_implemented_dispatch', 501);
     }
 
-    // Extract success status and pdf from the API result
-    $api_success = is_array($api_result) && !empty($api_result['success']);
-    $pdf_base64 = is_array($api_result) ? ($api_result['pdf_base64'] ?? null) : null;
-
-    // If API call failed, return error WITHOUT debiting credits
-    if (!$api_success) {
-        $error_code = is_array($api_result) ? ($api_result['error'] ?? 'api_error') : 'api_error';
-        error_log('SERPRO Consultas: API call failed for type=' . $type . ' error=' . $error_code . ' - credits NOT debited');
-        wp_send_json_error(array('code' => $error_code), 500);
+    // Handle API Result
+    $http_code = $api_result['http_code'] ?? 500;
+    if (empty($api_result['success'])) {
+        $msg = $api_result['error'] ?? 'api_error';
+        wp_send_json_error(array('message' => $msg, 'code' => $http_code), $http_code >= 200 ? $http_code : 500);
     }
 
-    // API succeeded — now debit credits
-    $debit_info = serc_wallet_debit($user_id, $type);
-    if ($debit_info === false) {
-        // This should not happen since we checked quota above, but safety net
-        error_log('SERPRO Consultas: debit failed unexpectedly for type=' . $type);
-        wp_send_json_error(array('code' => 'no_quota'), 402);
+    // Success - Debit Credits
+    $debited = 0.0;
+    if ($debit_needed > 0) {
+        $new_balance = $current_balance - $debit_needed;
+        update_user_meta($user_id, 'serc_credit_balance', $new_balance);
+        $debited = $debit_needed;
+        serc_log_activity($user_id, 'debit', 'Débito consulta ' . $type . ': -' . $debited);
     }
+
+    // Save Consultant Data & PDF
+    $pdf_base64 = $api_result['pdf_base64'] ?? null;
+    $filename = 'consulta-' . $type . '-' . time() . '.pdf';
+    $download_url = '';
+    $upload_status = 'pending';
+    $up = null;
+
     $consulta_id = wp_insert_post(array(
         'post_type' => 'serc_consulta',
         'post_status' => 'private',
         'post_author' => $user_id,
-        'post_title' => 'Consulta ' . $type . ' #' . time(),
+        'post_title' => 'Consulta ' . strtoupper($type) . ' #' . time()
     ));
-    $filename = 'consulta-' . $type . '-' . $user_id . '-' . time() . '.pdf';
-    $upload_status = 'no_pdf';
-    $download_url = null;
+
     if ($consulta_id) {
         update_post_meta($consulta_id, 'type', $type);
         update_post_meta($consulta_id, 'filename', $filename);
+
         // If API didn't return a PDF, generate one from the JSON data
         if (!$pdf_base64 && !empty($serc_last_api_response)) {
             error_log('SERPRO Consultas: consulta ' . $consulta_id . ' no API PDF for type=' . $type . ', generating from data...');
@@ -2076,6 +2014,7 @@ function serc_lookup()
                 error_log('SERPRO Consultas: consulta ' . $consulta_id . ' PDF generated from JSON data successfully');
             }
         }
+
         if ($pdf_base64) {
             update_post_meta($consulta_id, 'pdf_base64', $pdf_base64);
             $up = serc_upload_pdf_to_storage($filename, $pdf_base64);
@@ -2084,8 +2023,10 @@ function serc_lookup()
             $download_url = admin_url('admin-ajax.php?action=serc_download&hash=' . $hash);
             error_log('SERPRO Consultas: consulta ' . $consulta_id . ' upload_status=' . $upload_status);
         } else {
+            $upload_status = 'no_pdf';
             error_log('SERPRO Consultas: consulta ' . $consulta_id . ' no PDF returned from API AND generation failed for type=' . $type);
         }
+
         // Also store the raw API response for reference
         if (!empty($serc_last_api_response)) {
             update_post_meta($consulta_id, 'api_response', wp_json_encode($serc_last_api_response));
@@ -2096,9 +2037,10 @@ function serc_lookup()
     // Log the query activity
     serc_log_activity($user_id, 'query', 'Consulta ' . $type);
 
+    // Return Success
     wp_send_json_success(array(
-        'quota' => $debit_info['balance'],
-        'debited' => $debit_info['debited'],
+        'quota' => ($current_balance - $debited),
+        'debited' => $debited,
         'result' => array(
             'mensagem' => 'Consulta ' . $type . ' realizada com sucesso.',
             'pdfBase64' => $pdf_base64,

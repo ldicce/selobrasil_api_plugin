@@ -45,6 +45,10 @@ if (!$is_ajax) {
                 class="action-card">
                 <i class="ph ph-car"></i> Veicular
             </a>
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'credito']); ?>"
+                class="action-card">
+                <i class="ph ph-receipt"></i> Dívidas e Crédito
+            </a>
             <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'juridico']); ?>"
                 class="action-card" style="background: #f0f7f4">
                 <i class="ph ph-scales"></i> Jurídico
