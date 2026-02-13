@@ -1709,12 +1709,12 @@ function serc_lookup()
     if (!$user_id)
         wp_send_json_error('no_user', 403);
 
-    // Rate Limit (30 lookups per hour per user)
-    $k = 'serc_rl_lookup_' . $user_id;
-    $c = intval(get_transient($k));
-    if ($c >= 30)
-        wp_send_json_error('rate_limit', 429);
-    set_transient($k, $c + 1, 3600);
+    // Rate Limit has been removed to allow testing
+    // $k = 'serc_rl_lookup_' . $user_id;
+    // $c = intval(get_transient($k));
+    // if ($c >= 30)
+    //    wp_send_json_error('rate_limit', 429);
+    // set_transient($k, $c + 1, 3600);
 
     $type = sanitize_text_field($_POST['type'] ?? '');
 
@@ -2509,11 +2509,12 @@ function serc_upload()
     $uid = get_current_user_id();
     if (!$uid)
         wp_send_json_error('no_user', 401);
-    $rk = 'serc_rl_ul_' . $uid;
-    $rc = intval(get_transient($rk));
-    if ($rc >= 30)
-        wp_send_json_error('rate_limit', 429);
-    set_transient($rk, $rc + 1, 3600);
+    // Rate Limit has been removed to allow testing
+    // $rk = 'serc_rl_ul_' . $uid;
+    // $rc = intval(get_transient($rk));
+    // if ($rc >= 30)
+    //    wp_send_json_error('rate_limit', 429);
+    // set_transient($rk, $rc + 1, 3600);
     $ct = $_SERVER['CONTENT_TYPE'] ?? '';
     if (stripos($ct, 'multipart/form-data') === false) {
         error_log('SERPRO Consultas: upload endpoint bad content-type ' . $ct);
