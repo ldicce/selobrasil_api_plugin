@@ -8,7 +8,7 @@ if (!defined('ABSPATH'))
 
 // Require user to be logged in — redirect to WP login/register page if not
 if (!is_user_logged_in()) {
-    wp_redirect(wp_login_url(home_url($_SERVER['REQUEST_URI'])));
+    wp_redirect('/login');
     exit;
 }
 
