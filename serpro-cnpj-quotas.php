@@ -985,15 +985,22 @@ function serc_apifull_post_extract_pdf_base64($endpoint, $payload, $log_prefix)
     }
     $code = wp_remote_retrieve_response_code($req);
     $body = wp_remote_retrieve_body($req);
-    error_log($log_prefix . ' API code=' . $code);
     if ($code < 200 || $code >= 300) {
         error_log($log_prefix . ' ERROR: API returned non-success HTTP code=' . $code);
-        return array('success' => false, 'pdf_base64' => null, 'error' => 'api_error', 'http_code' => $code);
+        // Try to decode body to get error message
+        $err_decoded = json_decode($body, true);
+        $err_msg = 'api_error';
+        if (is_array($err_decoded) && !empty($err_decoded['message'])) {
+            $err_msg = $err_decoded['message'];
+        } elseif (is_array($err_decoded) && !empty($err_decoded['error'])) {
+            $err_msg = $err_decoded['error'];
+        }
+        return array('success' => false, 'pdf_base64' => null, 'error' => $err_msg, 'http_code' => $code);
     }
     $decoded = json_decode($body, true);
     if (!is_array($decoded)) {
         error_log($log_prefix . ' WARNING: API response is not valid JSON. Body length=' . strlen($body));
-        return array('success' => false, 'pdf_base64' => null, 'error' => 'api_error', 'http_code' => $code);
+        return array('success' => false, 'pdf_base64' => null, 'error' => 'api_error_invalid_json', 'http_code' => $code);
     }
     $serc_last_api_response = $decoded;
     $pdf_base64 = serc_find_pdf_base64_recursive($decoded);
@@ -1380,11 +1387,11 @@ function serc_apifull_agregados_propria($placa)
     );
 }
 
-function serc_apifull_ic_bin_estadual($placa, $state)
+function serc_apifull_ic_bin_estadual($placa)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-bin-estadual',
-        array('placa' => $placa, 'state' => $state, 'link' => 'ic-bin-estadual'),
+        array('placa' => $placa, 'link' => 'ic-bin-estadual'),
         'SERPRO Consultas: VEICULAR BIN ESTADUAL'
     );
 }
@@ -1769,10 +1776,6 @@ function serc_lookup()
         // --- VEICULAR ---
         case 'agregados_propria':
         case 'ic_bin_estadual':
-            if (empty($state) || strlen($state) !== 2)
-                wp_send_json_error('invalid_state', 400);
-        // Fallthrough to check placa
-
         case 'ic_bin_nacional':
         case 'ic_foto_leilao':
         case 'leilao':
@@ -1874,7 +1877,7 @@ function serc_lookup()
             $api_result = serc_apifull_agregados_propria($placa);
             break;
         case 'ic_bin_estadual':
-            $api_result = serc_apifull_ic_bin_estadual($placa, $state);
+            $api_result = serc_apifull_ic_bin_estadual($placa);
             break;
         case 'ic_bin_nacional':
             $api_result = serc_apifull_ic_bin_nacional($placa);
