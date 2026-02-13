@@ -2,7 +2,7 @@
 /*
 Plugin Name: Selo Brasil - Consultas
 Description: Define cotas fixas automaticamente sempre que um pedido é criado com status Concluído.
-Version: 3.3.0
+Version: 3.3.1
 Author: Selo Brasil
 */
 
@@ -1194,8 +1194,11 @@ function serc_html_to_pdf_binary($html)
  */
 function serc_minimal_pdf_from_html($html)
 {
+    // Remove <style> and <script> blocks entirely (content + tags) before stripping HTML
+    $html_clean = preg_replace('/<style[^>]*>.*?<\/style>/si', '', $html);
+    $html_clean = preg_replace('/<script[^>]*>.*?<\/script>/si', '', $html_clean);
     // Extract text content from HTML
-    $text = strip_tags(str_replace(array('<br>', '<br/>', '<br />', '</tr>', '</p>', '</div>', '</h1>', '</th>', '</td>'), "\n", $html));
+    $text = strip_tags(str_replace(array('<br>', '<br/>', '<br />', '</tr>', '</p>', '</div>', '</h1>', '</th>', '</td>'), "\n", $html_clean));
     $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
     // Clean up multiple newlines and whitespace
     $text = preg_replace('/[ \t]+/', ' ', $text);
@@ -1427,7 +1430,7 @@ function serc_apifull_lookup_bin_estadual($estado)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-bin-estadual',
-        array('placa' => $estado, 'link' => 'ic-bin-estadual'),
+        array('estado' => $estado, 'link' => 'ic-bin-estadual'),
         'SERPRO Consultas: BIN ESTADUAL'
     );
 }
@@ -1436,7 +1439,7 @@ function serc_apifull_lookup_bin_nacional($cpf)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-bin-nacional',
-        array('placa' => $cpf, 'link' => 'ic-bin-nacional'),
+        array('cpf' => $cpf, 'link' => 'ic-bin-nacional'),
         'SERPRO Consultas: BIN NACIONAL'
     );
 }
@@ -1445,7 +1448,7 @@ function serc_apifull_lookup_foto_leilao($leilao_id)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-foto-leilao',
-        array('placa' => $leilao_id, 'link' => 'ic-foto-leilao'),
+        array('leilaoId' => $leilao_id, 'link' => 'ic-foto-leilao'),
         'SERPRO Consultas: FOTO LEILAO'
     );
 }
@@ -1454,7 +1457,7 @@ function serc_apifull_lookup_leilao($filtro)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/leilao',
-        array('placa' => $filtro, 'link' => 'leilao'),
+        array('filtro' => $filtro, 'link' => 'leilao'),
         'SERPRO Consultas: LEILAO'
     );
 }
@@ -1531,7 +1534,7 @@ function serc_apifull_lookup_recall($modelo)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-recall',
-        array('placa' => $modelo, 'link' => 'ic-recall'),
+        array('modelo' => $modelo, 'link' => 'ic-recall'),
         'SERPRO Consultas: RECALL'
     );
 }
@@ -1567,7 +1570,7 @@ function serc_apifull_lookup_fipe($marca, $modelo, $ano)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/fipe',
-        array('placa' => $marca, 'link' => 'fipe'),
+        array('marca' => $marca, 'modelo' => $modelo, 'ano' => $ano, 'link' => 'fipe'),
         'SERPRO Consultas: FIPE'
     );
 }
@@ -2024,6 +2027,13 @@ function serc_lookup()
         $api_result = serc_apifull_lookup_r_acoes_e_processos_judiciais($cpf);
     } elseif ($type === 'dossie_juridico_cpf') {
         $api_result = serc_apifull_lookup_dossie_juridico($cpf);
+    } elseif ($type === 'dossie_juridico') {
+        $payload_key = ($doc_type === 'cpf') ? 'cpf' : 'cnpj';
+        $api_result = serc_apifull_post_extract_pdf_base64(
+            '/api/ic-dossie-juridico',
+            array($payload_key => $document, 'link' => 'ic-dossie-juridico'),
+            'SERPRO Consultas: DOSSIE JURIDICO'
+        );
     } elseif ($type === 'certidao_nacional_debitos_trabalhistas') {
         $api_result = serc_apifull_lookup_certidao_nacional_debitos_trabalhistas($cpf);
     }
@@ -2367,7 +2377,7 @@ function serc_account_consultas_endpoint()
             $st = get_post_meta($pid, 'upload_status', true);
             $hash = serc_consulta_ensure_hash($pid);
             $url = admin_url('admin-ajax.php?action=serc_download&hash=' . $hash);
-            echo '<tr><td>' . esc_html(get_the_date('d/m/Y H:i')) . '</td><td>' . esc_html($t) . '</td><td>' . esc_html($st ?: 'n/a') . '</td><td><a class="button" href="' . esc_url($url) . '">download</a></td></tr>';
+            echo '<tr><td>' . esc_html(get_the_date('d/m/Y H:i')) . '</td><td>' . esc_html($t) . '</td><td>' . esc_html($st ?: 'n/a') . '</td><td><a class="action-btn" href="' . esc_url($url) . '"><i class="ph-bold ph-download-simple"></i> Download PDF</a></td></tr>';
         }
         wp_reset_postdata();
     } else {
