@@ -2,7 +2,7 @@
 /*
 Plugin Name: Selo Brasil - Consultas
 Description: Define cotas fixas automaticamente sempre que um pedido é criado com status Concluído.
-Version: 3.2.4
+Version: 3.3.0
 Author: Selo Brasil
 */
 
@@ -89,7 +89,7 @@ function serc_frontend_assets()
 {
     // jQuery Mask for CPF/CNPJ formatting
     wp_enqueue_script('jquery-mask', plugins_url('jQuery-Mask-Plugin-master/dist/jquery.mask.min.js', __FILE__), array('jquery'), '1.14.16', true);
-    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '3.2.4', true);
+    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '3.3.0', true);
 
     // External Assets (Google Fonts & Phosphor Icons)
     wp_enqueue_style('serc-google-fonts', 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap', array(), null);
@@ -97,7 +97,7 @@ function serc_frontend_assets()
 
 
     // Main Dashboard Styles
-    wp_enqueue_style('serc-dashboard-style', plugins_url('assets/css/style.css', __FILE__), array(), '3.2.4');
+    wp_enqueue_style('serc-dashboard-style', plugins_url('assets/css/style.css', __FILE__), array(), '3.3.0');
 
     wp_localize_script('serc-frontend', 'serc_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
@@ -115,17 +115,6 @@ function serc_get_user_credits()
 
     $user_id = get_current_user_id();
     $balance = get_user_meta($user_id, 'serc_credit_balance', true);
-
-    // Fallback logic if needed (legacy wallet system)
-    if ($balance === '') {
-        $wallet = serc_get_wallet($user_id);
-        $sum = 0.0;
-        foreach ($wallet as $entry) {
-            $sum += floatval($entry['balance'] ?? 0);
-        }
-        $balance = $sum;
-    }
-
     return floatval($balance);
 }
 
@@ -238,6 +227,16 @@ function serc_add_admin_menu()
         6                       // Position
     );
 
+    // Submenu: Debit Settings
+    add_submenu_page(
+        'serc-dashboard',       // Parent slug
+        'Configuração de Débitos', // Page title
+        'Débitos por Consulta',    // Menu title
+        'manage_options',          // Capability
+        'serc-debit-settings',     // Menu slug
+        'serc_render_debit_settings_page' // Callback
+    );
+
     add_options_page('Serpro Consultas - Shortcodes', 'Serpro Consultas', 'manage_options', 'serpro-consultas-shortcodes', 'serc_shortcodes_page');
     add_options_page('API Full – Token', 'API Full – Token', 'manage_options', 'serpro-apifull-token', 'serc_token_page');
 }
@@ -247,9 +246,161 @@ function serc_render_admin_page()
     ?>
     <div class="wrap">
         <h1>Selo Brasil - Painel Administrativo</h1>
-        <p>Funcionalidades administrativas em breve...</p>
-        <hr>
         <p>Acesse o painel do cliente via shortcode <code>[serc_dashboard]</code> em uma página do site.</p>
+        <hr>
+        <p><a href="<?php echo admin_url('admin.php?page=serc-debit-settings'); ?>" class="button button-primary">Configurar
+                Débitos por Consulta</a></p>
+    </div>
+    <?php
+}
+
+/**
+ * Get global debit value for a consultation type
+ * 
+ * @param string $type Consultation type ID
+ * @return float Debit value in credits
+ */
+function serc_get_global_debit($type)
+{
+    $config = get_option('serc_global_debit_config', array());
+    if (is_string($config)) {
+        $config = json_decode($config, true);
+        if (!is_array($config))
+            $config = array();
+    }
+    if (isset($config[$type])) {
+        return floatval($config[$type]);
+    }
+    // Fallback: try to get from integrations-config.php 'value' field
+    if (function_exists('serc_get_integration_by_id')) {
+        $integration = serc_get_integration_by_id($type);
+        if ($integration && isset($integration['value'])) {
+            // Convert from "5,50" format to float
+            $val = str_replace(',', '.', $integration['value']);
+            return floatval($val);
+        }
+    }
+    return 0.0;
+}
+
+/**
+ * Render the global debit settings page
+ */
+function serc_render_debit_settings_page()
+{
+    if (!current_user_can('manage_options'))
+        return;
+
+    // Load integrations config for default values
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+
+    // Handle form submission
+    if (isset($_POST['serc_debit_config_save']) && check_admin_referer('serc_debit_config_nonce')) {
+        $types = serc_get_consultation_types();
+        $config = array();
+        foreach ($types as $code => $label) {
+            if (isset($_POST['serc_debit'][$code])) {
+                $val = floatval(str_replace(',', '.', sanitize_text_field($_POST['serc_debit'][$code])));
+                if ($val > 0) {
+                    $config[$code] = round($val, 2);
+                }
+            }
+        }
+        update_option('serc_global_debit_config', $config);
+        echo '<div class="updated"><p>Configurações de débito salvas com sucesso!</p></div>';
+    }
+
+    $types = serc_get_consultation_types();
+    $saved_config = get_option('serc_global_debit_config', array());
+    if (is_string($saved_config)) {
+        $saved_config = json_decode($saved_config, true);
+        if (!is_array($saved_config))
+            $saved_config = array();
+    }
+
+    // Build a map of integration default values
+    $all_integrations = serc_get_integrations_config();
+    $default_values = array();
+    foreach ($all_integrations as $category => $integrations) {
+        foreach ($integrations as $integration) {
+            $val = str_replace(',', '.', $integration['value'] ?? '0');
+            $default_values[$integration['id']] = floatval($val);
+        }
+    }
+
+    // Group types by category for organized display
+    $category_map = array(
+        'cpf' => array(),
+        'cnpj' => array(),
+        'veicular' => array(),
+        'juridico' => array(),
+        'outros' => array(),
+    );
+    $category_labels = array(
+        'cpf' => 'CPF / Pessoa Física',
+        'cnpj' => 'CNPJ / Pessoa Jurídica',
+        'veicular' => 'Veicular',
+        'juridico' => 'Jurídico',
+        'outros' => 'Outros',
+    );
+    // Map types to categories based on integrations-config
+    $type_category = array();
+    foreach ($all_integrations as $cat => $integrations) {
+        foreach ($integrations as $integration) {
+            $type_category[$integration['id']] = $cat;
+        }
+    }
+    foreach ($types as $code => $label) {
+        $cat = isset($type_category[$code]) ? $type_category[$code] : 'outros';
+        if (!isset($category_map[$cat]))
+            $cat = 'outros';
+        $category_map[$cat][$code] = $label;
+    }
+
+    ?>
+    <div class="wrap">
+        <h1>Configuração de Débitos por Consulta</h1>
+        <p>Defina o valor em créditos que será debitado do cliente para cada tipo de consulta. Estes valores são
+            <strong>globais</strong> e aplicam-se a todos os usuários.
+        </p>
+        <form method="post">
+            <?php wp_nonce_field('serc_debit_config_nonce'); ?>
+            <?php foreach ($category_map as $cat_key => $cat_types): ?>
+                <?php if (empty($cat_types))
+                    continue; ?>
+                <h2><?php echo esc_html($category_labels[$cat_key] ?? ucfirst($cat_key)); ?></h2>
+                <table class="widefat striped" style="max-width:600px; margin-bottom: 20px;">
+                    <thead>
+                        <tr>
+                            <th>Consulta</th>
+                            <th style="width:150px">Débito (créditos)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($cat_types as $code => $label):
+                            $current_val = '';
+                            if (isset($saved_config[$code])) {
+                                $current_val = $saved_config[$code];
+                            } elseif (isset($default_values[$code])) {
+                                $current_val = $default_values[$code];
+                            }
+                            ?>
+                            <tr>
+                                <td><?php echo esc_html($label); ?></td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" name="serc_debit[<?php echo esc_attr($code); ?>]"
+                                        value="<?php echo esc_attr($current_val); ?>" style="width:120px" />
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endforeach; ?>
+            <p class="submit">
+                <button type="submit" name="serc_debit_config_save" class="button button-primary">Salvar
+                    Configurações</button>
+            </p>
+        </form>
     </div>
     <?php
 }
@@ -758,28 +909,24 @@ function serc_token_page()
    ========================= */
 function serc_wallet_debit($user_id, $type)
 {
-    $wallet = serc_get_wallet($user_id);
-    if (!empty($wallet)) {
-        foreach ($wallet as $key => $entry) {
-            $entry_balance = floatval(isset($entry['balance']) ? $entry['balance'] : 0);
-            $pid = isset($entry['product_id']) ? intval($entry['product_id']) : 0;
-            $vid = isset($entry['variation_id']) ? intval($entry['variation_id']) : 0;
-            if ($entry_balance > 0 && ($pid || $vid)) {
-                // Busca configuração por item para obter o débito do tipo
-                $cfg = serc_get_consultations_config_for_ids($pid, $vid);
-                $row = isset($cfg[$type]) ? $cfg[$type] : array();
-                $enabled = !empty($row['enabled']);
-                $debit = floatval(isset($row['debit']) ? $row['debit'] : 0);
-                if ($enabled && $debit > 0 && $entry_balance >= $debit) {
-                    $wallet[$key]['balance'] = round($entry_balance - $debit, 2);
-                    serc_set_wallet($user_id, $wallet);
-                    $new_balance = floatval(get_user_meta($user_id, 'serc_credit_balance', true));
-                    return array('balance' => $new_balance, 'debited' => $debit);
-                }
-            }
-        }
+    // Usa débito global configurado no painel admin
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+    $debit = serc_get_global_debit($type);
+    if ($debit <= 0) {
+        $current_balance = floatval(get_user_meta($user_id, 'serc_credit_balance', true));
+        return array('balance' => $current_balance, 'debited' => 0);
     }
-    return false;
+
+    $current_balance = floatval(get_user_meta($user_id, 'serc_credit_balance', true));
+    if ($current_balance < $debit) {
+        return false;
+    }
+
+    // Deduz do saldo global
+    $new_balance = round($current_balance - $debit, 2);
+    update_user_meta($user_id, 'serc_credit_balance', $new_balance);
+
+    return array('balance' => $new_balance, 'debited' => $debit);
 }
 
 /* ============================
@@ -1761,25 +1908,12 @@ function serc_lookup()
     }
 
     // Check if user HAS quota before calling the API (don't debit yet)
-    $wallet = serc_get_wallet($user_id);
-    $has_quota = false;
-    if (!empty($wallet)) {
-        foreach ($wallet as $entry) {
-            $entry_balance = floatval(isset($entry['balance']) ? $entry['balance'] : 0);
-            $pid = isset($entry['product_id']) ? intval($entry['product_id']) : 0;
-            $vid = isset($entry['variation_id']) ? intval($entry['variation_id']) : 0;
-            if ($entry_balance > 0 && ($pid || $vid)) {
-                $cfg = serc_get_consultations_config_for_ids($pid, $vid);
-                $row = isset($cfg[$type]) ? $cfg[$type] : array();
-                $enabled = !empty($row['enabled']);
-                $debit = floatval(isset($row['debit']) ? $row['debit'] : 0);
-                if ($enabled && $debit > 0 && $entry_balance >= $debit) {
-                    $has_quota = true;
-                    break;
-                }
-            }
-        }
-    }
+    // Usa débito global ao invés de configuração por produto
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+    $debit_needed = serc_get_global_debit($type);
+    $current_balance = floatval(get_user_meta($user_id, 'serc_credit_balance', true));
+    $has_quota = ($debit_needed <= 0) || ($current_balance >= $debit_needed);
+
     if (!$has_quota) {
         $purchase_url = '';
         if (function_exists('wc_get_page_permalink')) {
@@ -1980,7 +2114,6 @@ function serc_lookup_cnpj()
 /* =========================
    Helpers
    ========================= */
-// Opções via painel removidas; toda configuração é por produto/variação.
 
 function serc_get_consultation_types()
 {
@@ -2034,71 +2167,9 @@ function serc_get_consultation_types()
     );
 }
 
-function serc_get_consultations_config_for_item($item)
-{
-    $pid = $item->get_product_id();
-    $vid = $item->get_variation_id();
-    $raw = '';
-    if ($vid) {
-        $raw = get_post_meta($vid, 'serc_consultations_config', true);
-        if (empty($raw))
-            $raw = get_post_meta($pid, 'serc_consultations_config', true);
-    } else {
-        $raw = get_post_meta($pid, 'serc_consultations_config', true);
-    }
-    $config = array();
-    if (!empty($raw)) {
-        $decoded = json_decode($raw, true);
-        if (is_array($decoded))
-            $config = $decoded;
-    }
-    return $config; // formato: [type] => ['enabled'=>bool, 'debit'=>float]
-}
-
-// Helper: obtém configuração por produto/variação (sem depender de item de pedido)
-function serc_get_consultations_config_for_ids($pid, $vid)
-{
-    $raw = '';
-    if ($vid) {
-        $raw = get_post_meta($vid, 'serc_consultations_config', true);
-        if (empty($raw))
-            $raw = get_post_meta($pid, 'serc_consultations_config', true);
-    } else {
-        $raw = get_post_meta($pid, 'serc_consultations_config', true);
-    }
-    $config = array();
-    if (!empty($raw)) {
-        $decoded = json_decode($raw, true);
-        if (is_array($decoded))
-            $config = $decoded;
-    }
-    return $config; // formato: [type] => ['enabled'=>bool, 'debit'=>float]
-}
-
-function serc_get_wallet($user_id)
-{
-    $raw = get_user_meta($user_id, 'serc_credit_wallet', true);
-    $wallet = array();
-    if (!empty($raw)) {
-        $decoded = json_decode($raw, true);
-        if (is_array($decoded))
-            $wallet = $decoded;
-    }
-    return $wallet;
-}
-
-function serc_set_wallet($user_id, $wallet)
-{
-    update_user_meta($user_id, 'serc_credit_wallet', wp_json_encode($wallet));
-    $sum = 0.0;
-    foreach ($wallet as $k => $entry) {
-        $sum += floatval(isset($entry['balance']) ? $entry['balance'] : 0);
-    }
-    update_user_meta($user_id, 'serc_credit_balance', round($sum, 2));
-}
 
 /* =========================
-   Lógica principal: aplicar cotas fixas
+   Lógica principal: aplicar créditos ao concluir pedido
    ========================= */
 function serc_handle_order_completed($order_id_or_obj)
 {
@@ -2108,12 +2179,13 @@ function serc_handle_order_completed($order_id_or_obj)
     $user_id = $order->get_user_id();
     if (!$user_id)
         return;
-    $wallet = serc_get_wallet($user_id);
+
     $total_add = 0.0;
     foreach ($order->get_items() as $item) {
         $qty = intval($item->get_quantity());
         $pid = $item->get_product_id();
         $vid = $item->get_variation_id();
+
         // Créditos gerais por item (variação tem precedência)
         $general = 0.0;
         if ($vid) {
@@ -2124,24 +2196,17 @@ function serc_handle_order_completed($order_id_or_obj)
         } else {
             $general = floatval(get_post_meta($pid, 'serc_general_credits', true));
         }
+
         if ($general > 0 && $qty > 0) {
-            $add = round($general * max(1, $qty), 2);
-            $key = ($vid ? ('v' . $vid) : ('p' . $pid));
-            if (!isset($wallet[$key])) {
-                $wallet[$key] = array(
-                    'balance' => 0.0,
-                    'product_id' => $pid,
-                    'variation_id' => $vid,
-                );
-            }
-            $wallet[$key]['balance'] = round(floatval($wallet[$key]['balance']) + $add, 2);
-            $total_add += $add;
+            $total_add += round($general * max(1, $qty), 2);
         }
     }
+
     if ($total_add > 0) {
-        serc_set_wallet($user_id, $wallet);
-        $new_balance = floatval(get_user_meta($user_id, 'serc_credit_balance', true));
-        error_log("SERPRO Consultas: Pedido #{$order->get_id()} adicionou +{$total_add} créditos (geral) ao usuário {$user_id}. Saldo: {$new_balance}.");
+        $current_balance = floatval(get_user_meta($user_id, 'serc_credit_balance', true));
+        $new_balance = round($current_balance + $total_add, 2);
+        update_user_meta($user_id, 'serc_credit_balance', $new_balance);
+        error_log("SERPRO Consultas: Pedido #{$order->get_id()} adicionou +{$total_add} créditos ao usuário {$user_id}. Saldo: {$new_balance}.");
     }
 }
 
@@ -2154,38 +2219,18 @@ function serc_check_new_order_status($order_id)
     }
 }
 
-/* (Removido) Função antiga de consulta direta CNPJ — usamos serc_lookup(type) */
+
 /* =========================
    WooCommerce: Campo por produto
    ========================= */
 function serc_wc_product_field()
 {
     global $post;
-    $types = serc_get_consultation_types();
-    $raw = get_post_meta($post->ID, 'serc_consultations_config', true);
-    $cfg = array();
-    if (!empty($raw)) {
-        $tmp = json_decode($raw, true);
-        if (is_array($tmp))
-            $cfg = $tmp;
-    }
     echo '<div class="options_group">';
     $general = get_post_meta($post->ID, 'serc_general_credits', true);
     $general = $general === '' ? '' : esc_attr(floatval($general));
     echo '<p><strong>Créditos por compra (GERAL)</strong>: <input type="number" step="0.01" min="0" name="serc_general_credits" value="' . $general . '" /></p>';
-    echo '<p><strong>Consultas</strong> — habilite e configure por tipo (apenas débito):</p>';
-    echo '<table class="widefat" style="margin-top:8px">';
-    echo '<thead><tr><th>Tipo</th><th>Habilitar</th><th>Débito por consulta</th></tr></thead><tbody>';
-    foreach ($types as $code => $label) {
-        $enabled = !empty($cfg[$code]['enabled']);
-        $debit = isset($cfg[$code]['debit']) ? floatval($cfg[$code]['debit']) : '';
-        echo '<tr>';
-        echo '<td>' . esc_html($label) . '</td>';
-        echo '<td><input type="checkbox" name="serc_consultations_config[' . esc_attr($code) . '][enabled]" ' . ($enabled ? 'checked' : '') . ' /></td>';
-        echo '<td><input type="number" step="0.01" min="0" name="serc_consultations_config[' . esc_attr($code) . '][debit]" value="' . esc_attr($debit) . '" /></td>';
-        echo '</tr>';
-    }
-    echo '</tbody></table>';
+    echo '<p class="description">Quantidade de créditos adicionados ao saldo do cliente ao comprar este produto. Os valores de débito por consulta são configurados globalmente em <strong>Selo Brasil → Débitos por Consulta</strong>.</p>';
     echo '</div>';
 }
 
@@ -2200,57 +2245,17 @@ function serc_wc_save_product_field($post_id)
             delete_post_meta($post_id, 'serc_general_credits');
         }
     }
-    // Salva configuração por tipo (apenas débito)
-    if (isset($_POST['serc_consultations_config']) && is_array($_POST['serc_consultations_config'])) {
-        $types = serc_get_consultation_types();
-        $out = array();
-        foreach ($types as $code => $label) {
-            $row = isset($_POST['serc_consultations_config'][$code]) ? $_POST['serc_consultations_config'][$code] : array();
-            $enabled = !empty($row['enabled']);
-            $debit = isset($row['debit']) ? floatval(wc_clean($row['debit'])) : 0;
-            if ($enabled && $debit > 0) {
-                $out[$code] = array('enabled' => true, 'debit' => $debit);
-            } elseif ($enabled) {
-                // habilitado sem números válidos: registra com zero para feedback
-                $out[$code] = array('enabled' => true, 'debit' => max(0, $debit));
-            }
-        }
-        if (!empty($out)) {
-            update_post_meta($post_id, 'serc_consultations_config', wp_json_encode($out));
-        } else {
-            delete_post_meta($post_id, 'serc_consultations_config');
-        }
-    }
+    // Configuração por tipo agora é global — não salvar mais por produto
 }
 
 function serc_wc_variation_field($loop, $variation_data, $variation)
 {
-    $types = serc_get_consultation_types();
-    $raw = get_post_meta($variation->ID, 'serc_consultations_config', true);
-    $cfg = array();
-    if (!empty($raw)) {
-        $tmp = json_decode($raw, true);
-        if (is_array($tmp))
-            $cfg = $tmp;
-    }
     echo '<div class="form-row form-row-full">';
     // Créditos gerais da variação
     $general = get_post_meta($variation->ID, 'serc_general_credits', true);
     $general = $general === '' ? '' : esc_attr(floatval($general));
     echo '<p><strong>Créditos por compra (GERAL)</strong>: <input type="number" step="0.01" min="0" name="variable_serc_general_credits[' . esc_attr($loop) . ']" value="' . $general . '" /></p>';
-    echo '<p><strong>Consultas (variação)</strong> — habilite e configure por tipo (apenas débito):</p>';
-    echo '<table class="widefat">';
-    echo '<thead><tr><th>Tipo</th><th>Habilitar</th><th>Débito por consulta</th></tr></thead><tbody>';
-    foreach ($types as $code => $label) {
-        $enabled = !empty($cfg[$code]['enabled']);
-        $debit = isset($cfg[$code]['debit']) ? floatval($cfg[$code]['debit']) : '';
-        echo '<tr>';
-        echo '<td>' . esc_html($label) . '</td>';
-        echo '<td><input type="checkbox" name="variable_serc_consultations_config[' . esc_attr($loop) . '][' . esc_attr($code) . '][enabled]" ' . ($enabled ? 'checked' : '') . ' /></td>';
-        echo '<td><input type="number" step="0.01" min="0" name="variable_serc_consultations_config[' . esc_attr($loop) . '][' . esc_attr($code) . '][debit]" value="' . esc_attr($debit) . '" /></td>';
-        echo '</tr>';
-    }
-    echo '</tbody></table>';
+    echo '<p class="description">Quantidade de créditos adicionados ao saldo do cliente ao comprar esta variação. Os valores de débito são configurados globalmente em <strong>Selo Brasil → Débitos por Consulta</strong>.</p>';
     echo '</div>';
 }
 
@@ -2265,30 +2270,10 @@ function serc_wc_save_variation_field($variation_id, $i)
             delete_post_meta($variation_id, 'serc_general_credits');
         }
     }
-    // Salva configuração por tipo (apenas débito)
-    if (isset($_POST['variable_serc_consultations_config'][$i]) && is_array($_POST['variable_serc_consultations_config'][$i])) {
-        $types = serc_get_consultation_types();
-        $out = array();
-        $rows = $_POST['variable_serc_consultations_config'][$i];
-        foreach ($types as $code => $label) {
-            $row = isset($rows[$code]) ? $rows[$code] : array();
-            $enabled = !empty($row['enabled']);
-            $debit = isset($row['debit']) ? floatval(wc_clean($row['debit'])) : 0;
-            if ($enabled && $debit > 0) {
-                $out[$code] = array('enabled' => true, 'debit' => $debit);
-            } elseif ($enabled) {
-                $out[$code] = array('enabled' => true, 'debit' => max(0, $debit));
-            }
-        }
-        if (!empty($out)) {
-            update_post_meta($variation_id, 'serc_consultations_config', wp_json_encode($out));
-        } else {
-            delete_post_meta($variation_id, 'serc_consultations_config');
-        }
-    }
+    // Configuração por tipo agora é global — não salvar mais por variação
 }
 
-// (Removido) Funções antigas de consulta/débito únicos — agora usamos configuração por tipo
+
 
 add_action('init', 'serc_init_endpoints');
 function serc_init_endpoints()

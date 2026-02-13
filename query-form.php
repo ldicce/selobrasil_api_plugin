@@ -57,7 +57,11 @@ if (!$is_ajax) {
                 <div class="query-meta-item">
                     <img src="<?php echo plugins_url('assets/img/credit.svg', __FILE__); ?>" alt="Ícone Créditos" style="width: 18px; height: 18px; vertical-align: middle;">
                     Valor: <strong>
-                        <?php echo esc_html($integration['value']); ?> créditos
+                        <?php
+                        // Usa débito global configurado no admin
+                        $debit_display = serc_get_global_debit($integration['id']);
+                        echo esc_html(number_format($debit_display, 2, ',', '.'));
+                        ?> créditos
                     </strong>
                 </div>
                 <div class="query-meta-item">

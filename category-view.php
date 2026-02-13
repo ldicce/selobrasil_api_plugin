@@ -120,7 +120,7 @@ if (empty($category)) {
                         <div class="integration-value">
                             <img src="<?php echo plugin_dir_url(__FILE__); ?>assets/img/credit.svg" alt="Ícone Créditos"
                                 style="width: 18px; height: 18px; vertical-align: middle;">
-                            <?php echo esc_html($integration['value']); ?>
+                            <?php echo esc_html(number_format(serc_get_global_debit($integration['id']), 2, ',', '.')); ?>
                         </div>
                         <div class="integration-type">
                             <?php echo esc_html($integration['type']); ?>
