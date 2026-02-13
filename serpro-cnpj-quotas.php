@@ -1380,11 +1380,11 @@ function serc_apifull_agregados_propria($placa)
     );
 }
 
-function serc_apifull_ic_bin_estadual($placa)
+function serc_apifull_ic_bin_estadual($placa, $state)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-bin-estadual',
-        array('placa' => $placa, 'link' => 'ic-bin-estadual'),
+        array('placa' => $placa, 'state' => $state, 'link' => 'ic-bin-estadual'),
         'SERPRO Consultas: VEICULAR BIN ESTADUAL'
     );
 }
@@ -1769,6 +1769,10 @@ function serc_lookup()
         // --- VEICULAR ---
         case 'agregados_propria':
         case 'ic_bin_estadual':
+            if (empty($state) || strlen($state) !== 2)
+                wp_send_json_error('invalid_state', 400);
+        // Fallthrough to check placa
+
         case 'ic_bin_nacional':
         case 'ic_foto_leilao':
         case 'leilao':
@@ -1870,7 +1874,7 @@ function serc_lookup()
             $api_result = serc_apifull_agregados_propria($placa);
             break;
         case 'ic_bin_estadual':
-            $api_result = serc_apifull_ic_bin_estadual($placa);
+            $api_result = serc_apifull_ic_bin_estadual($placa, $state);
             break;
         case 'ic_bin_nacional':
             $api_result = serc_apifull_ic_bin_nacional($placa);
