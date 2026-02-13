@@ -1349,11 +1349,11 @@ function serc_apifull_ic_nome($name, $state)
     );
 }
 
-function serc_apifull_ic_telefone($phone)
+function serc_apifull_ic_telefone($ddd, $phone, $state)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/ic-telefone',
-        array('phone' => $phone, 'link' => 'ic-telefone'),
+        array('ddd' => $ddd, 'telefone' => $phone, 'state' => $state, 'link' => 'ic-telefone'),
         'SERPRO Consultas: TELEFONE'
     );
 }
@@ -1574,11 +1574,11 @@ function serc_apifull_cp_spc_cenprot($document)
     );
 }
 
-function serc_apifull_r_spc_srs($cpf)
+function serc_apifull_r_spc_srs($document)
 {
     return serc_apifull_post_extract_pdf_base64(
         '/api/r-spc-srs',
-        array('cpf' => $cpf, 'link' => 'r-spc-srs'),
+        array('document' => $document, 'link' => 'r-spc-srs'),
         'SERPRO Consultas: SPC SERASA'
     );
 }
@@ -1730,12 +1730,18 @@ function serc_lookup()
     $document = preg_replace('/\D+/', '', $_POST['document'] ?? ''); // CPF or CNPJ
     $placa = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $_POST['placa'] ?? ''));
     $phone_input = preg_replace('/\D+/', '', $_POST['phone'] ?? ''); // if frontend sends full phone
-    // If frontend sends ddd/telefone separate (as per old config), combine them handling both cases
     $ddd = preg_replace('/\D+/', '', $_POST['ddd'] ?? '');
-    $telefone = preg_replace('/\D+/', '', $_POST['telefone'] ?? '');
-    if (empty($phone_input) && !empty($ddd) && !empty($telefone)) {
-        $phone_input = $ddd . $telefone;
+    // If phone is full (from legacy or single input), we might need to split it for some APIs if they require separation
+    // But for ic_telefone we now expect 'ddd' and 'phone' fields separately from frontend due to new config.
+    // However, if user uses old form or single input, we try to handle:
+    if (empty($ddd) && strlen($phone_input) >= 10) {
+        $ddd = substr($phone_input, 0, 2);
+        $phone_input = substr($phone_input, 2);
     }
+    $telefone = preg_replace('/\D+/', '', $phone_input);
+
+    // State is needed for ic_nome and ic_telefone
+    $state = strtoupper(preg_replace('/[^A-Za-z]/', '', $_POST['state'] ?? ''));
 
     // Input Validation based on type
     switch ($type) {
@@ -1748,12 +1754,11 @@ function serc_lookup()
             break;
         case 'ic_nome':
             $name = sanitize_text_field($_POST['name'] ?? '');
-            $state = strtoupper(preg_replace('/[^A-Za-z]/', '', $_POST['state'] ?? ''));
             if (empty($name) || strlen($state) !== 2)
                 wp_send_json_error('invalid_input', 400);
             break;
         case 'ic_telefone':
-            if (strlen($phone_input) < 10)
+            if (empty($ddd) || empty($telefone) || strlen($state) !== 2)
                 wp_send_json_error('invalid_phone', 400);
             break;
         case 'cnpj':
@@ -1805,8 +1810,8 @@ function serc_lookup()
             break;
 
         case 'r_spc_srs':
-            if (strlen($cpf) !== 11)
-                wp_send_json_error('invalid_cpf', 400);
+            if (strlen($document) !== 11 && strlen($document) !== 14)
+                wp_send_json_error('invalid_document', 400);
             break;
 
         default:
@@ -1850,11 +1855,11 @@ function serc_lookup()
             break;
         case 'ic_nome':
             $name = sanitize_text_field($_POST['name'] ?? '');
-            $state = strtoupper(preg_replace('/[^A-Za-z]/', '', $_POST['state'] ?? ''));
+            // $state already extracted
             $api_result = serc_apifull_ic_nome($name, $state);
             break;
         case 'ic_telefone':
-            $api_result = serc_apifull_ic_telefone($phone_input);
+            $api_result = serc_apifull_ic_telefone($ddd, $telefone, $state);
             break;
         case 'cnpj':
             $api_result = serc_apifull_cnpj($cnpj);
@@ -1927,7 +1932,7 @@ function serc_lookup()
             $api_result = serc_apifull_cp_spc_cenprot($document);
             break;
         case 'r_spc_srs':
-            $api_result = serc_apifull_r_spc_srs($cpf);
+            $api_result = serc_apifull_r_spc_srs($document);
             break;
         case 'cp_serasa_premium_v2':
             $api_result = serc_apifull_cp_serasa_premium_v2($document);
