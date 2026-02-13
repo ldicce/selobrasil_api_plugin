@@ -31,54 +31,33 @@ jQuery(function ($) {
   function handleSubmit($form) {
     var type = $form.data('type');
     var payload = { action: 'serc_lookup', nonce: serc_ajax.nonce, type: type };
-    if (type === 'cnpj') {
-      payload.cnpj = cleanDigits($form.find('[name="cnpj"]').val());
-    } else if (type === 'cpf' || type === 'cpf_renda' || type === 'ic_cnh' || type === 'bin_nacional' || type === 'serasa_premium' || type === 'ic_basico_score' || type === 'scpc_boa_vista' || type === 'bacen' || type === 'quod' || type === 'spc_brasil_cenprot' || type === 'spc_brasil_serasa' || type === 'dividas_bancrias_cpf' || type === 'cadastrais_score_dividas' || type === 'cadastrais_score_dividas_cp' || type === 'scr_bacen_score' || type === 'protesto_nacional_cenprot' || type === 'r_acoes_e_processos_judiciais' || type === 'dossie_juridico_cpf' || type === 'certidao_nacional_debitos_trabalhistas') {
-      payload.cpf = cleanDigits($form.find('[name="cpf"]').val());
-    } else if (type === 'dossie_juridico') {
-      var docType = $form.find('[name="doc_type"]:checked').val();
-      var docVal = $form.find('[name="document"]').val();
-      if (docType === 'cpf') payload.cpf = cleanDigits(docVal);
-      else payload.cnpj = cleanDigits(docVal);
-      payload.doc_type = docType;
-    } else if (type === 'ic_nome') {
-      payload.name = $form.find('[name="name"]').val();
-      payload.state = ($form.find('[name="state"]').val() || '').toUpperCase().replace(/[^A-Z]/g, '');
-    } else if (type === 'ic_telefone') {
-      payload.ddd = cleanDigits($form.find('[name="ddd"]').val());
-      payload.telefone = cleanDigits($form.find('[name="telefone"]').val());
-      payload.state = ($form.find('[name="state"]').val() || '').toUpperCase().replace(/[^A-Z]/g, '');
-    } else if (type === 'crlv' || type === 'proprietario_placa') {
-      payload.placa = cleanPlate($form.find('[name="placa"]').val());
-    } else if (type === 'renainf') {
-      payload.placa = cleanPlate($form.find('[name="placa"]').val());
-      payload.renavam = cleanDigits($form.find('[name="renavam"]').val());
-    } else if (type === 'ic_placa' || type === 'leilao_score_perda_total' || type === 'historico_roubo_furto' || type === 'indice_risco_veicular' || type === 'licenciamento_anterior' || type === 'ic_proprietario_atual' || type === 'gravame_detalhamento' || type === 'renajud' || type === 'renainf_placa' || type === 'sinistro') {
-      payload.placa = cleanPlate($form.find('[name="placa"]').val());
-    } else if (type === 'gravame') {
-      payload.chassi = cleanChassi($form.find('[name="chassi"]').val());
-    } else if (type === 'laudo_veicular') {
-      var chassi = cleanChassi($form.find('[name="chassi"]').val());
-      var placa = cleanPlate($form.find('[name="placa"]').val());
-      if (chassi) payload.chassi = chassi;
-      if (placa) payload.placa = placa;
-    } else if (type === 'scpc_bv_plus_v2' || type === 'srs_premium') {
-      payload.cpf = cleanDigits($form.find('[name="cpf"]').val());
-    } else if (type === 'agregados_basica_propria') {
-      payload.param = $form.find('[name="param"]').val();
-    } else if (type === 'bin_estadual') {
-      payload.estado = ($form.find('[name="estado"]').val() || '').toUpperCase().replace(/[^A-Z]/g, '');
-    } else if (type === 'foto_leilao') {
-      payload.leilaoId = cleanDigits($form.find('[name="leilaoId"]').val());
-    } else if (type === 'leilao') {
-      payload.filtro = $form.find('[name="filtro"]').val();
-    } else if (type === 'recall') {
-      payload.modelo = $form.find('[name="modelo"]').val();
-    } else if (type === 'fipe') {
-      payload.marca = $form.find('[name="marca"]').val();
-      payload.modelo = $form.find('[name="modelo"]').val();
-      payload.ano = cleanDigits($form.find('[name="ano"]').val());
-    }
+    // Generic Payload Builder - maps all form inputs to payload
+    $form.find('input, select, textarea').each(function () {
+      var $input = $(this);
+      var name = $input.attr('name');
+      var val = $input.val();
+
+      if (!name || $input.attr('type') === 'submit') return;
+
+      // Handle checkbox/radio
+      if (($input.attr('type') === 'radio' || $input.attr('type') === 'checkbox') && !$input.is(':checked')) {
+        return;
+      }
+
+      // Apply cleaning logic based on field names
+      if (name === 'cpf' || name === 'cnpj' || name === 'document' || name === 'phone' || name === 'telefone' || name === 'ddd' || name === 'renavam' || name === 'cep' || name === 'ano' || name === 'leilaoId') {
+        payload[name] = cleanDigits(val);
+      } else if (name === 'placa') {
+        payload[name] = cleanPlate(val);
+      } else if (name === 'chassi') {
+        payload[name] = cleanChassi(val);
+      } else if (name === 'state' || name === 'estado' || name === 'uf') {
+        payload[name] = (val || '').toUpperCase().replace(/[^A-Z]/g, '');
+      } else {
+        // Default: raw value (name, model, brand, etc)
+        payload[name] = val;
+      }
+    });
     var $result = $form.find('.serc-result');
     var $submit = $form.find('button[type="submit"]');
     $submit.prop('disabled', true).hide();
