@@ -21,6 +21,24 @@ require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
 $integration_id = $_GET['integration'] ?? '';
 $integration = serc_get_integration_by_id($integration_id);
 
+$all_intg = serc_get_integrations_config();
+$cat_key = '';
+foreach ($all_intg as $k => $ints) {
+    foreach ($ints as $i) {
+        if ($i['id'] === $integration_id) {
+            $cat_key = $k;
+            break 2;
+        }
+    }
+}
+$cat_labels = [
+    'cpf' => 'CPF',
+    'cnpj' => 'CNPJ',
+    'veicular' => 'Veicular',
+    'credito' => 'Dívidas e Crédito',
+    'juridico' => 'Jurídico'
+];
+$category_name = $cat_labels[$cat_key] ?? 'Outros';
 // Handle if integration not found
 if (!$integration) {
     if (!$is_ajax) {
@@ -41,6 +59,9 @@ if (!$is_ajax) {
             <div class="query-breadcrumb">
                 <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>">Dashboard</a> /
                 <a href="<?php echo serc_get_dashboard_url(['view' => 'category']); ?>">Consultas</a> /
+                <?php if ($cat_key): ?>
+                    <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => $cat_key]); ?>"><?php echo esc_html($category_name); ?></a> /
+                <?php endif; ?>
                 <?php echo esc_html($integration['name']); ?>
             </div>
 

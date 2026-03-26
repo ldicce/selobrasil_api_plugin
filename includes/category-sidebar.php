@@ -37,6 +37,7 @@ $category_labels = [
     'cpf' => 'CPF',
     'cnpj' => 'CNPJ',
     'veicular' => 'Veicular',
+    'credito' => 'Crédito',
     'juridico' => 'Jurídico'
 ];
 ?>
