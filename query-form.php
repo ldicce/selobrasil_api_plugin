@@ -69,6 +69,9 @@ if (!$is_ajax) {
                         <?php echo esc_html($integration['type']); ?>
                     </strong>
                 </div>
+                <button type="button" class="btn-view-model" id="btn-view-model">
+                    <i class="ph-bold ph-file-pdf"></i> Visualizar Modelo
+                </button>
             </div>
         </div>
 
@@ -79,7 +82,7 @@ if (!$is_ajax) {
                     <?php
                     $fields = $integration['fields'] ?? [];
                     if (empty($fields)): ?>
-                            <p style="color: #999;">Formulário em desenvolvimento. Em breve você poderá realizar consultas.</p>
+                            <p style="color: var(--text-muted);">Formulário em desenvolvimento. Em breve você poderá realizar consultas.</p>
                     <?php else: ?>
                             <?php foreach ($fields as $field): ?>
                                     <label for="<?php echo esc_attr($field['name']); ?>">
@@ -112,6 +115,28 @@ if (!$is_ajax) {
 
         <div class="result-section">
             <!-- Results will appear here after form submission -->
+        </div>
+    </div>
+
+    <!-- PDF Model Preview Modal -->
+    <div class="pdf-modal-overlay" id="pdf-modal-overlay">
+        <div class="pdf-modal">
+            <div class="pdf-modal__header">
+                <h3><i class="ph-bold ph-file-pdf"></i> Modelo de Relatório</h3>
+                <button class="pdf-modal__close" id="pdf-modal-close">
+                    <i class="ph-bold ph-x"></i>
+                </button>
+            </div>
+            <div class="pdf-modal__body">
+                <iframe
+                    id="pdf-modal-iframe"
+                    src="<?php echo plugins_url('assets/img/lorem_ipsum.pdf', __FILE__); ?>"
+                    type="application/pdf"
+                    width="100%"
+                    height="100%"
+                    style="border: none;"
+                ></iframe>
+            </div>
         </div>
     </div>
 

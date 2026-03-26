@@ -3,6 +3,23 @@ if (!defined('ABSPATH'))
     exit;
 ?>
 <div class="dashboard-wrapper">
+    <script>
+        // Immediatelly apply dark mode and prevent transition flash
+        (function() {
+            try {
+                document.body.classList.add('preload');
+                var theme = localStorage.getItem('serc_theme');
+                if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+                window.addEventListener('load', function() {
+                    setTimeout(function() { document.body.classList.remove('preload'); }, 50);
+                });
+            } catch (e) {}
+        })();
+    </script>
     <?php
     // CSS Injection (Inline to bypass path issues)
     $style_path = dirname(__DIR__) . '/assets/css/style.css';
@@ -66,7 +83,12 @@ if (!defined('ABSPATH'))
                     style="width: 18px; height: 18px; vertical-align: middle;"> Créditos:
                 <?php echo number_format(serc_get_user_credits(), 2, ',', ('.')); ?>
             </div>
-            <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User" class="user-avatar">
+            <button id="serc-theme-toggle" class="theme-toggle-btn" title="Alternar tema" aria-label="Alternar modo escuro/claro">
+                <i class="ph-bold ph-moon" id="serc-theme-icon"></i>
+            </button>
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'settings']); ?>" class="user-avatar-link" title="Configuração">
+                <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User" class="user-avatar">
+            </a>
         </div>
     </div>
 
@@ -91,7 +113,8 @@ if (!defined('ABSPATH'))
             <i class="ph-fill ph-whatsapp-logo"></i>
             <span>Suporte</span>
         </a>
-        <a href="#" class="mobile-nav-item">
+        <a href="<?php echo serc_get_dashboard_url(['view' => 'settings']); ?>"
+            class="mobile-nav-item <?php echo (isset($_GET['view']) && $_GET['view'] === 'settings') ? 'active' : ''; ?>">
             <i class="ph-fill ph-user"></i>
             <span>Conta</span>
         </a>

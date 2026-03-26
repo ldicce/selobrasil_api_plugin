@@ -50,7 +50,7 @@ if (!$is_ajax) {
                 <i class="ph ph-receipt"></i> Dívidas e Crédito
             </a>
             <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'juridico']); ?>"
-                class="action-card" style="background: #f0f7f4">
+                class="action-card">
                 <i class="ph ph-scales"></i> Jurídico
             </a>
         </div>
@@ -68,10 +68,20 @@ if (!$is_ajax) {
                 </button>
             </div>
             <div class="stat-card">
-                <div class="stat-title">Uso hoje</div>
+                <div class="stat-title">Uso de Créditos</div>
+                <div class="usage-filter-bar">
+                    <button class="usage-filter-btn active" data-period="today">Hoje</button>
+                    <button class="usage-filter-btn" data-period="week">Esta semana</button>
+                    <button class="usage-filter-btn" data-period="month">Este mês</button>
+                </div>
                 <div class="stat-value" style="font-size: 24px;">
-                    <?php echo serc_get_today_query_count($user_id); ?> <span
-                        style="font-size: 14px; font-weight: 400; color: #666; margin-left: 4px;">Consultas</span>
+                    <span id="usage-query-count"><?php echo serc_get_today_query_count($user_id); ?></span>
+                    <span style="font-size: 14px; font-weight: 400; color: var(--text-muted); margin-left: 4px;">Consultas</span>
+                </div>
+                <div id="usage-credit-total" style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+                    <img src="<?php echo plugin_dir_url(__FILE__); ?>assets/img/credit.svg" alt="Créditos"
+                        style="width: 14px; height: 14px; vertical-align: middle;">
+                    <span id="usage-credits-value">—</span> créditos consumidos
                 </div>
             </div>
         </div>
@@ -110,7 +120,7 @@ if (!$is_ajax) {
                         ?>
                         <a href="<?php echo $url; ?>" class="fav-card fav-card--filled"
                             data-integration-id="<?php echo esc_attr($fav['id']); ?>" data-slot-index="<?php echo $i; ?>">
-                            <i class="<?php echo esc_attr($fav['icon'] ?? 'ph-puzzle-piece'); ?>"></i>
+                            <i class="ph <?php echo esc_attr(!empty($fav['icon']) ? $fav['icon'] : 'ph-magnifying-glass'); ?>"></i>
                             <span class="fav-card__name"><?php echo esc_html($fav['name']); ?></span>
                             <button class="fav-card__edit"
                                 onclick="event.preventDefault(); event.stopPropagation(); openFavoriteSelector(this, <?php echo $i; ?>)"
@@ -170,7 +180,7 @@ if (!$is_ajax) {
                 <div class="activity-item">
                     <div class="activity-dot <?php echo $dot_color; ?>"></div>
                     <div class="activity-text"><?php echo esc_html($activity['description']); ?></div>
-                    <span class="activity-meta"><?php echo $time_ago; ?> atrás</span>
+                    <span class="activity-time"><?php echo $time_ago; ?> atrás</span>
                 </div>
                 <?php
             endforeach;

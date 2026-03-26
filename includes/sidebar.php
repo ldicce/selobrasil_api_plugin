@@ -27,16 +27,40 @@ $current_page = $_GET['view'] ?? 'dashboard';
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'reports']); ?>"
+                class="nav-link <?php echo $current_page === 'reports' ? 'active' : ''; ?>">
                 <i class="ph-fill ph-chart-bar"></i> Relatórios
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'shop']); ?>"
+                class="nav-link <?php echo $current_page === 'shop' ? 'active' : ''; ?>">
                 <i class="ph-fill ph-storefront"></i> Loja
             </a>
         </li>
+        <li class="nav-item">
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'orders']); ?>"
+                class="nav-link <?php echo $current_page === 'orders' ? 'active' : ''; ?>">
+                <i class="ph-fill ph-package"></i> Pedidos
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'settings']); ?>"
+                class="nav-link <?php echo $current_page === 'settings' ? 'active' : ''; ?>">
+                <i class="ph-fill ph-gear"></i> Configuração
+            </a>
+        </li>
     </ul>
+
+    <div class="sidebar-footer" style="margin-top: auto;">
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="<?php echo wp_logout_url(home_url()); ?>" class="nav-link serc-logout-link" style="color: #e74c3c;">
+                    <i class="ph-bold ph-sign-out"></i> Sair
+                </a>
+            </li>
+        </ul>
+    </div>
 
     <div class="help-banner">
         <div style="font-weight:bold;margin-bottom:5px;font-size:14px;">Precisar de ajuda?</div>

@@ -141,6 +141,28 @@ jQuery(function ($) {
     showConfirm($(this).addClass('serc-form').attr('data-type', 'cnpj'));
   });
 
+  // Logout confirmation
+  $(document).on('click', '.serc-logout-link', function(e) {
+    e.preventDefault();
+    var logoutUrl = $(this).attr('href');
+    
+    var $ov = $('<div class="serc-modal-overlay" />').attr('style', 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999');
+    var $md = $('<div class="serc-modal" />').attr('style', 'background:#fff;border-radius:8px;padding:20px;max-width:360px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:center');
+    var $txt = $('<div>Tem certeza que deseja sair?</div>').attr('style', 'margin-bottom:16px;font-size:16px;color:#333;font-weight:500;');
+    var $ok = $('<a href="' + logoutUrl + '" class="btn-confirm">Confirmar</a>').attr('style', 'display:inline-block;margin-right:8px;padding:8px 16px;background:#e74c3c;color:#fff;text-decoration:none;border-radius:4px;cursor:pointer;');
+    var $cancel = $('<button type="button">Cancelar</button>').attr('style', 'padding:8px 16px;background:#eee;color:#333;border:none;border-radius:4px;cursor:pointer');
+    
+    $md.append($txt, $('<div style="margin-top:20px;" />').append($ok, $cancel));
+    $ov.append($md);
+    $('body').append($ov);
+    
+    function close() { $ov.remove(); }
+    $cancel.on('click', function () { close(); });
+    $ov.on('click', function (e) { if (e.target === this) close(); });
+    $(document).on('keydown.sercLogoutModal', function (e) { if (e.key === 'Escape') { $(document).off('keydown.sercLogoutModal'); close(); } });
+    $ok.on('click', function() { $(document).off('keydown.sercLogoutModal'); });
+  });
+
   // Apply masks if plugin is available
   if ($.fn && $.fn.mask) {
     // CPF and CNPJ masks
@@ -238,6 +260,46 @@ jQuery(function ($) {
 
       console.log('[SERC Navigation] Dashboard detected, AJAX navigation enabled');
 
+      // =============================================
+      // Dark / Light Mode Toggle
+      // =============================================
+      (function () {
+        var $wrapper = $('.dashboard-wrapper');
+        var $btn = $('#serc-theme-toggle');
+        var $icon = $('#serc-theme-icon');
+        var STORAGE_KEY = 'serc-theme';
+
+        function applyTheme(theme, save) {
+          if (theme === 'dark') {
+            $wrapper.addClass('dark-mode');
+            $icon.removeClass('ph-moon').addClass('ph-sun');
+            $btn.attr('title', 'Alternar para modo claro').attr('aria-label', 'Alternar para modo claro');
+          } else {
+            $wrapper.removeClass('dark-mode');
+            $icon.removeClass('ph-sun').addClass('ph-moon');
+            $btn.attr('title', 'Alternar para modo escuro').attr('aria-label', 'Alternar para modo escuro');
+          }
+          if (save) {
+            try { localStorage.setItem(STORAGE_KEY, theme); } catch (e) {}
+          }
+        }
+
+        // On load: check localStorage then system preference
+        var saved;
+        try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+        if (saved === 'dark' || saved === 'light') {
+          applyTheme(saved, false);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          applyTheme('dark', false);
+        }
+
+        // Toggle on click
+        $btn.on('click', function () {
+          var isDark = $wrapper.hasClass('dark-mode');
+          applyTheme(isDark ? 'light' : 'dark', true);
+        });
+      })();
+
       // Function to update main sidebar and mobile nav active state
       function updateSidebarActiveState(view) {
         // Map views to sidebar link selectors
@@ -246,7 +308,11 @@ jQuery(function ($) {
           'category': 'category',
           'query': 'category',  // Query is part of Consultas
           'consulta': 'category',
-          'history': 'history'
+          'history': 'history',
+          'reports': 'reports',
+          'shop': 'shop',
+          'orders': 'orders',
+          'settings': 'settings'
         };
 
         var targetView = viewMap[view] || 'dashboard';
@@ -430,6 +496,72 @@ jQuery(function ($) {
       // Favorites Management
       // =============================================
       initFavorites();
+
+      // =============================================
+      // Dashboard Usage Filter Buttons
+      // =============================================
+      $(document).on('click', '.usage-filter-btn', function() {
+        $('.usage-filter-btn').removeClass('active');
+        $(this).addClass('active');
+
+        var period = $(this).data('period');
+        $('#usage-query-count').text('...');
+        $('#usage-credits-value').text('...');
+
+        $.ajax({
+          url: serc_ajax.ajax_url,
+          type: 'POST',
+          data: {
+            action: 'serc_get_usage_count',
+            nonce: serc_ajax.nonce,
+            period: period
+          },
+          success: function(response) {
+            if (response.success && response.data) {
+              $('#usage-query-count').text(response.data.query_count);
+              $('#usage-credits-value').text(parseFloat(response.data.credit_total).toFixed(2));
+            }
+          },
+          error: function() {
+            $('#usage-query-count').text('—');
+            $('#usage-credits-value').text('—');
+          }
+        });
+      });
+
+      // Auto-load today's usage data on dashboard load
+      setTimeout(function() {
+        if ($('.usage-filter-btn.active').length && $('#usage-credits-value').length) {
+          $('.usage-filter-btn.active').trigger('click');
+        }
+      }, 300);
+
+      // =============================================
+      // PDF Model Preview Modal
+      // =============================================
+      $(document).on('click', '#btn-view-model, .btn-view-model', function() {
+        $('#pdf-modal-overlay').addClass('active');
+        $('body').css('overflow', 'hidden');
+      });
+
+      $(document).on('click', '#pdf-modal-close', function() {
+        $('#pdf-modal-overlay').removeClass('active');
+        $('body').css('overflow', '');
+      });
+
+      $(document).on('click', '#pdf-modal-overlay', function(e) {
+        if ($(e.target).is('#pdf-modal-overlay')) {
+          $('#pdf-modal-overlay').removeClass('active');
+          $('body').css('overflow', '');
+        }
+      });
+
+      $(document).on('keydown', function(e) {
+        if (e.key === 'Escape' && $('#pdf-modal-overlay').hasClass('active')) {
+          $('#pdf-modal-overlay').removeClass('active');
+          $('body').css('overflow', '');
+        }
+      });
     }
   });
 
@@ -754,4 +886,87 @@ jQuery(function ($) {
     });
   }
 
+});
+
+/* ========== Settings Tab Switching & Form Save ========== */
+jQuery(document).ready(function ($) {
+  // Settings internal tabs
+  $(document).on('click', '.settings-tab', function () {
+    var tab = $(this).data('tab');
+    $('.settings-tab').removeClass('active');
+    $(this).addClass('active');
+    $('.settings-panel').removeClass('active');
+    $('#settings-panel-' + tab).addClass('active');
+  });
+
+  // Save account details
+  $(document).on('submit', '#serc-account-form', function (e) {
+    e.preventDefault();
+    var $status = $('#account-save-status');
+    $status.html('<span style="color:#f0ad4e;">Salvando...</span>');
+
+    $.ajax({
+      url: serc_ajax.ajax_url,
+      type: 'POST',
+      data: {
+        action: 'serc_save_account_settings',
+        nonce: serc_ajax.nonce,
+        section: 'account',
+        first_name: $('#account_first_name').val(),
+        last_name: $('#account_last_name').val(),
+        display_name: $('#account_display_name').val(),
+        email: $('#account_email').val(),
+        password_current: $('#password_current').val(),
+        password_new: $('#password_new').val(),
+        password_confirm: $('#password_confirm').val()
+      },
+      success: function (response) {
+        if (response.success) {
+          $status.html('<span style="color:#10B981;">✓ ' + response.data + '</span>');
+          // Clear password fields
+          $('#password_current, #password_new, #password_confirm').val('');
+        } else {
+          $status.html('<span style="color:#e74c3c;">✗ ' + response.data + '</span>');
+        }
+        setTimeout(function () { $status.html(''); }, 4000);
+      },
+      error: function () {
+        $status.html('<span style="color:#e74c3c;">Erro de conexão</span>');
+      }
+    });
+  });
+
+  // Save address
+  $(document).on('submit', '#serc-address-form', function (e) {
+    e.preventDefault();
+    var $status = $('#address-save-status');
+    $status.html('<span style="color:#f0ad4e;">Salvando...</span>');
+
+    var data = {
+      action: 'serc_save_account_settings',
+      nonce: serc_ajax.nonce,
+      section: 'address'
+    };
+    // Collect all billing fields
+    $(this).find('input').each(function () {
+      data[$(this).attr('name')] = $(this).val();
+    });
+
+    $.ajax({
+      url: serc_ajax.ajax_url,
+      type: 'POST',
+      data: data,
+      success: function (response) {
+        if (response.success) {
+          $status.html('<span style="color:#10B981;">✓ ' + response.data + '</span>');
+        } else {
+          $status.html('<span style="color:#e74c3c;">✗ ' + response.data + '</span>');
+        }
+        setTimeout(function () { $status.html(''); }, 4000);
+      },
+      error: function () {
+        $status.html('<span style="color:#e74c3c;">Erro de conexão</span>');
+      }
+    });
+  });
 });

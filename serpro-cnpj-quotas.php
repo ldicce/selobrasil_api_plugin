@@ -61,7 +61,13 @@ add_action('wp_ajax_serc_lookup', 'serc_lookup');
 add_action('wp_ajax_serc_load_view', 'serc_load_dashboard_view');
 add_action('wp_ajax_nopriv_serc_load_view', 'serc_load_dashboard_view');
 add_action('wp_ajax_nopriv_serc_lookup', 'serc_lookup');
+
+// Reports & Usage endpoints
+add_action('wp_ajax_serc_get_credit_report_data', 'serc_get_credit_report_data');
+add_action('wp_ajax_serc_get_usage_count', 'serc_get_usage_count');
+add_action('wp_ajax_serc_admin_report_data', 'serc_admin_report_data');
 add_action('wp_ajax_serc_upload', 'serc_upload');
+add_action('wp_ajax_serc_save_account_settings', 'serc_save_account_settings');
 
 // Favorites management
 add_action('wp_ajax_serc_toggle_favorite', 'serc_toggle_favorite');
@@ -239,6 +245,16 @@ function serc_add_admin_menu()
 
     add_options_page('Serpro Consultas - Shortcodes', 'Serpro Consultas', 'manage_options', 'serpro-consultas-shortcodes', 'serc_shortcodes_page');
     add_options_page('API Full – Token', 'API Full – Token', 'manage_options', 'serpro-apifull-token', 'serc_token_page');
+
+    // Submenu: Admin Reports
+    add_submenu_page(
+        'serc-dashboard',
+        'Relatórios',
+        'Relatórios',
+        'manage_options',
+        'serc-admin-reports',
+        'serc_render_admin_reports_page'
+    );
 }
 
 function serc_render_admin_page()
@@ -252,6 +268,255 @@ function serc_render_admin_page()
                 Débitos por Consulta</a></p>
     </div>
     <?php
+}
+
+/**
+ * Render Admin Reports page (includes external file)
+ */
+function serc_render_admin_reports_page()
+{
+    include plugin_dir_path(__FILE__) . 'admin-reports.php';
+}
+
+/**
+ * AJAX handler: Admin report data
+ * Queries serc_consulta CPT for all users and returns aggregated stats
+ */
+function serc_admin_report_data()
+{
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('unauthorized');
+    }
+
+    check_ajax_referer('serc_admin_report', 'nonce');
+
+    $period = sanitize_text_field($_POST['period'] ?? 'today');
+    $date_from = sanitize_text_field($_POST['date_from'] ?? '');
+    $date_to = sanitize_text_field($_POST['date_to'] ?? '');
+
+    // Determine date range
+    $now = current_time('Y-m-d H:i:s');
+    $today = current_time('Y-m-d');
+    switch ($period) {
+        case 'today':
+            $start_date = $today . ' 00:00:00';
+            break;
+        case '7days':
+            $start_date = date('Y-m-d', strtotime('-7 days', strtotime($today))) . ' 00:00:00';
+            break;
+        case '30days':
+            $start_date = date('Y-m-d', strtotime('-30 days', strtotime($today))) . ' 00:00:00';
+            break;
+        case 'month':
+            $start_date = date('Y-m-01', strtotime($today)) . ' 00:00:00';
+            break;
+        case 'custom':
+            $start_date = ($date_from ?: date('Y-m-d', strtotime('-30 days'))) . ' 00:00:00';
+            $now = ($date_to ?: $today) . ' 23:59:59';
+            break;
+        default:
+            $start_date = $today . ' 00:00:00';
+    }
+
+    // Query all consultations in period
+    $args = array(
+        'post_type' => 'serc_consulta',
+        'post_status' => 'any',
+        'posts_per_page' => -1,
+        'date_query' => array(
+            array(
+                'after' => $start_date,
+                'before' => $now,
+                'inclusive' => true,
+            ),
+        ),
+    );
+    $query = new WP_Query($args);
+
+    // Load debit config for credit calculations
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+    $debit_config = get_option('serc_global_debit_config', array());
+    if (is_string($debit_config)) {
+        $debit_config = json_decode($debit_config, true) ?: array();
+    }
+    $all_integrations = serc_get_integrations_config();
+    $default_values = array();
+    foreach ($all_integrations as $cat => $ints) {
+        foreach ($ints as $int) {
+            $val = str_replace(',', '.', $int['value'] ?? '0');
+            $default_values[$int['id']] = floatval($val);
+        }
+    }
+
+    // Aggregate data
+    $total_queries = 0;
+    $total_credits = 0.0;
+    $user_stats = array();
+    $type_counts = array();
+    $timeline = array();
+    $recent = array();
+    $consultation_types_map = serc_get_consultation_types();
+
+    if ($query->have_posts()) {
+        $posts = $query->posts;
+        usort($posts, function ($a, $b) {
+            return strtotime($b->post_date) - strtotime($a->post_date);
+        });
+
+        foreach ($posts as $post) {
+            $total_queries++;
+            $type = get_post_meta($post->ID, 'type', true);
+            $uid = $post->post_author;
+            $post_date = $post->post_date;
+            $day = date('Y-m-d', strtotime($post_date));
+
+            $credit_val = isset($debit_config[$type]) ? floatval($debit_config[$type]) : (isset($default_values[$type]) ? $default_values[$type] : 0);
+            $total_credits += $credit_val;
+
+            if (!isset($user_stats[$uid])) {
+                $user_stats[$uid] = array('query_count' => 0, 'credits_used' => 0, 'last_query' => '');
+            }
+            $user_stats[$uid]['query_count']++;
+            $user_stats[$uid]['credits_used'] += $credit_val;
+            if (empty($user_stats[$uid]['last_query']) || strtotime($post_date) > strtotime($user_stats[$uid]['last_query'])) {
+                $user_stats[$uid]['last_query'] = $post_date;
+            }
+
+            $type_label = isset($consultation_types_map[$type]) ? $consultation_types_map[$type] : $type;
+            if (!isset($type_counts[$type_label])) {
+                $type_counts[$type_label] = 0;
+            }
+            $type_counts[$type_label]++;
+
+            if (!isset($timeline[$day])) {
+                $timeline[$day] = 0;
+            }
+            $timeline[$day]++;
+
+            if (count($recent) < 20) {
+                $user_info = get_userdata($uid);
+                $recent[] = array(
+                    'user' => $user_info ? $user_info->display_name : 'User #' . $uid,
+                    'type' => $type_label,
+                    'date' => date('d/m/Y H:i', strtotime($post_date)),
+                );
+            }
+        }
+    }
+    wp_reset_postdata();
+
+    // Build user rows
+    $users_rows = array();
+    foreach ($user_stats as $uid => $stats) {
+        $user_info = get_userdata($uid);
+        $balance = floatval(get_user_meta($uid, 'serc_credit_balance', true));
+        $users_rows[] = array(
+            'name' => $user_info ? $user_info->display_name : 'User #' . $uid,
+            'email' => $user_info ? $user_info->user_email : '',
+            'credits_used' => round($stats['credits_used'], 2),
+            'query_count' => $stats['query_count'],
+            'last_query' => $stats['last_query'] ? date('d/m/Y H:i', strtotime($stats['last_query'])) : '',
+            'balance' => round($balance, 2),
+        );
+    }
+    usort($users_rows, function ($a, $b) {
+        return $b['query_count'] - $a['query_count'];
+    });
+
+    // Build timeline (fill gap days)
+    $timeline_labels = array();
+    $timeline_data = array();
+    $start_ts = strtotime($start_date);
+    $end_ts = strtotime($now);
+    $current_ts = $start_ts;
+    while ($current_ts <= $end_ts) {
+        $d = date('Y-m-d', $current_ts);
+        $timeline_labels[] = date('d/m', $current_ts);
+        $timeline_data[] = isset($timeline[$d]) ? $timeline[$d] : 0;
+        $current_ts = strtotime('+1 day', $current_ts);
+    }
+
+    // Build ranking (top 10)
+    arsort($type_counts);
+    $ranking_labels = array_slice(array_keys($type_counts), 0, 10);
+    $ranking_data = array_slice(array_values($type_counts), 0, 10);
+
+    $total_users = count($user_stats);
+    $avg_queries = $total_users > 0 ? round($total_queries / $total_users, 1) : 0;
+
+    wp_send_json_success(array(
+        'total_queries' => $total_queries,
+        'total_credits' => round($total_credits, 2),
+        'total_users' => $total_users,
+        'avg_queries' => $avg_queries,
+        'timeline_labels' => $timeline_labels,
+        'timeline_data' => $timeline_data,
+        'users' => $users_rows,
+        'ranking_labels' => $ranking_labels,
+        'ranking_data' => $ranking_data,
+        'recent_activity' => $recent,
+    ));
+}
+
+/**
+ * AJAX handler: Save account settings (details + address)
+ */
+function serc_save_account_settings()
+{
+    check_ajax_referer('serpro_cnpj_nonce', 'nonce');
+
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_send_json_error('Não autenticado');
+    }
+
+    $section = sanitize_text_field($_POST['section'] ?? '');
+
+    if ($section === 'account') {
+        $first_name = sanitize_text_field($_POST['first_name'] ?? '');
+        $last_name = sanitize_text_field($_POST['last_name'] ?? '');
+        $display_name = sanitize_text_field($_POST['display_name'] ?? '');
+        $email = sanitize_email($_POST['email'] ?? '');
+
+        wp_update_user(array(
+            'ID' => $user_id,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'display_name' => $display_name,
+            'user_email' => $email,
+        ));
+
+        // Handle password change
+        $pw_current = $_POST['password_current'] ?? '';
+        $pw_new = $_POST['password_new'] ?? '';
+        $pw_confirm = $_POST['password_confirm'] ?? '';
+
+        if (!empty($pw_new)) {
+            if ($pw_new !== $pw_confirm) {
+                wp_send_json_error('As senhas não coincidem');
+            }
+            $user = get_user_by('id', $user_id);
+            if (!wp_check_password($pw_current, $user->user_pass, $user_id)) {
+                wp_send_json_error('Senha atual incorreta');
+            }
+            wp_set_password($pw_new, $user_id);
+        }
+
+        wp_send_json_success('Dados salvos com sucesso');
+    } elseif ($section === 'address') {
+        $address_fields = array(
+            'billing_address_1', 'billing_address_2', 'billing_city',
+            'billing_state', 'billing_postcode', 'billing_country', 'billing_phone',
+        );
+        foreach ($address_fields as $field) {
+            if (isset($_POST[$field])) {
+                update_user_meta($user_id, $field, sanitize_text_field($_POST[$field]));
+            }
+        }
+        wp_send_json_success('Endereço salvo com sucesso');
+    } else {
+        wp_send_json_error('Seção inválida');
+    }
 }
 
 /**
@@ -428,6 +693,18 @@ function serc_render_dashboard_page()
         case 'category':
             include plugin_dir_path(__FILE__) . 'category-view.php';
             break;
+        case 'shop':
+            include plugin_dir_path(__FILE__) . 'shop-view.php';
+            break;
+        case 'reports':
+            include plugin_dir_path(__FILE__) . 'reports-view.php';
+            break;
+        case 'orders':
+            include plugin_dir_path(__FILE__) . 'orders-view.php';
+            break;
+        case 'settings':
+            include plugin_dir_path(__FILE__) . 'settings-view.php';
+            break;
         case 'dashboard':
         default:
             include plugin_dir_path(__FILE__) . 'dashboard.php';
@@ -467,6 +744,22 @@ function serc_load_dashboard_view()
 
         case 'category':
             include plugin_dir_path(__FILE__) . 'category-view.php';
+            break;
+
+        case 'shop':
+            include plugin_dir_path(__FILE__) . 'shop-view.php';
+            break;
+
+        case 'reports':
+            include plugin_dir_path(__FILE__) . 'reports-view.php';
+            break;
+
+        case 'orders':
+            include plugin_dir_path(__FILE__) . 'orders-view.php';
+            break;
+
+        case 'settings':
+            include plugin_dir_path(__FILE__) . 'settings-view.php';
             break;
 
         case 'dashboard':
@@ -799,6 +1092,186 @@ function serc_get_all_integrations()
     }
 
     wp_send_json_success($result);
+    wp_die();
+}
+
+/**
+ * AJAX handler: Get credit report data (for Reports tab)
+ * Returns activities filtered by period, plus chart data
+ */
+function serc_get_credit_report_data()
+{
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_send_json_error('not_logged_in');
+        wp_die();
+    }
+
+    $period = isset($_POST['period']) ? sanitize_text_field($_POST['period']) : 'day';
+    $date_from = isset($_POST['date_from']) ? sanitize_text_field($_POST['date_from']) : '';
+    $date_to = isset($_POST['date_to']) ? sanitize_text_field($_POST['date_to']) : '';
+
+    // Determine date range
+    $now = current_time('timestamp');
+    switch ($period) {
+        case 'day':
+            $start = strtotime(current_time('Y-m-d') . ' 00:00:00');
+            $end = $now;
+            break;
+        case 'week':
+            $start = strtotime('monday this week', $now);
+            $end = $now;
+            break;
+        case 'month':
+            $start = strtotime(current_time('Y-m-01') . ' 00:00:00');
+            $end = $now;
+            break;
+        case 'custom':
+            $start = $date_from ? strtotime($date_from . ' 00:00:00') : strtotime('-30 days', $now);
+            $end = $date_to ? strtotime($date_to . ' 23:59:59') : $now;
+            break;
+        default:
+            $start = strtotime(current_time('Y-m-d') . ' 00:00:00');
+            $end = $now;
+    }
+
+    // Get all activities
+    $activities = get_user_meta($user_id, 'serc_activities', true);
+    if (!is_array($activities)) {
+        $activities = [];
+    }
+
+    // Filter by period and by type (query + debit)
+    $filtered = [];
+    $total_credits = 0.0;
+    $total_queries = 0;
+    $chart_buckets = [];
+
+    foreach ($activities as $activity) {
+        $ts = $activity['timestamp'];
+        if ($ts < $start || $ts > $end) continue;
+
+        if ($activity['type'] === 'query' || $activity['type'] === 'debit') {
+            // Extract credit value from debit description (format: "Débito consulta xxx: -5.50")
+            $credit_value = 0;
+            if ($activity['type'] === 'debit' && preg_match('/-([0-9]+\.?[0-9]*)$/', $activity['description'], $matches)) {
+                $credit_value = floatval($matches[1]);
+                $total_credits += $credit_value;
+            }
+            if ($activity['type'] === 'query') {
+                $total_queries++;
+            }
+
+            $activity_date = date('Y-m-d', $ts);
+            $filtered[] = [
+                'date' => date('d/m/Y', $ts),
+                'time' => date('H:i', $ts),
+                'type' => $activity['type'],
+                'description' => $activity['description'],
+                'credit_value' => $credit_value,
+                'timestamp' => $ts
+            ];
+
+            // Aggregate for chart
+            if ($activity['type'] === 'debit' && $credit_value > 0) {
+                if (!isset($chart_buckets[$activity_date])) {
+                    $chart_buckets[$activity_date] = 0;
+                }
+                $chart_buckets[$activity_date] += $credit_value;
+            }
+        }
+    }
+
+    // Sort filtered activities by timestamp desc
+    usort($filtered, function ($a, $b) {
+        return $b['timestamp'] - $a['timestamp'];
+    });
+
+    // Build chart data (fill gaps for continuous timeline)
+    $chart_labels = [];
+    $chart_data = [];
+
+    if (!empty($chart_buckets)) {
+        $current = $start;
+        while ($current <= $end) {
+            $d = date('Y-m-d', $current);
+            $chart_labels[] = date('d/m', $current);
+            $chart_data[] = isset($chart_buckets[$d]) ? round($chart_buckets[$d], 2) : 0;
+            $current = strtotime('+1 day', $current);
+        }
+    } else {
+        // Empty chart — show at least 7 days
+        $days_to_show = min(max(1, ($end - $start) / 86400), 30);
+        for ($i = 0; $i < $days_to_show; $i++) {
+            $d = strtotime("+{$i} day", $start);
+            $chart_labels[] = date('d/m', $d);
+            $chart_data[] = 0;
+        }
+    }
+
+    wp_send_json_success([
+        'total_queries' => $total_queries,
+        'total_credits' => round($total_credits, 2),
+        'activities' => $filtered,
+        'chart_labels' => $chart_labels,
+        'chart_data' => $chart_data,
+    ]);
+    wp_die();
+}
+
+/**
+ * AJAX handler: Get usage count for a period (Dashboard usage filter)
+ * Returns query count and credit total for today/week/month
+ */
+function serc_get_usage_count()
+{
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_send_json_error('not_logged_in');
+        wp_die();
+    }
+
+    $period = isset($_POST['period']) ? sanitize_text_field($_POST['period']) : 'today';
+
+    $now = current_time('timestamp');
+    switch ($period) {
+        case 'today':
+            $start = strtotime(current_time('Y-m-d') . ' 00:00:00');
+            break;
+        case 'week':
+            $start = strtotime('monday this week', $now);
+            break;
+        case 'month':
+            $start = strtotime(current_time('Y-m-01') . ' 00:00:00');
+            break;
+        default:
+            $start = strtotime(current_time('Y-m-d') . ' 00:00:00');
+    }
+
+    $activities = get_user_meta($user_id, 'serc_activities', true);
+    if (!is_array($activities)) {
+        $activities = [];
+    }
+
+    $query_count = 0;
+    $credit_total = 0.0;
+
+    foreach ($activities as $activity) {
+        if ($activity['timestamp'] < $start) continue;
+
+        if ($activity['type'] === 'query') {
+            $query_count++;
+        }
+        if ($activity['type'] === 'debit' && preg_match('/-([0-9]+\.?[0-9]*)$/', $activity['description'], $matches)) {
+            $credit_total += floatval($matches[1]);
+        }
+    }
+
+    wp_send_json_success([
+        'query_count' => $query_count,
+        'credit_total' => round($credit_total, 2),
+        'period' => $period,
+    ]);
     wp_die();
 }
 

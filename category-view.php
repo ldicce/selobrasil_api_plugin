@@ -27,7 +27,7 @@ if (empty($category)) {
     <div class="category-view-wrapper" style="display: contents;">
         <div class="category-header">
             <h1 class="category-title">Consultas</h1>
-            <p style="color: #666; margin-top: 5px;">Selecione uma categoria para iniciar sua consulta.</p>
+            <p style="color: var(--text-muted); margin-top: 5px;">Selecione uma categoria para iniciar sua consulta.</p>
         </div>
 
         <div class="dashboard-main" style="padding: 0; margin-top: 20px;">
@@ -50,7 +50,7 @@ if (empty($category)) {
                     <i class="ph ph-receipt"></i> Dívidas e Crédito
                 </a>
                 <a href="<?php echo serc_get_dashboard_url(['view' => 'category', 'type' => 'juridico']); ?>"
-                    class="action-card" style="background: #f0f7f4">
+                    class="action-card">
                     <i class="ph ph-scales"></i> Jurídico
                 </a>
             </div>
@@ -111,7 +111,7 @@ if (empty($category)) {
                     <div class="integration-row" style="cursor: pointer;">
                         <div class="integration-info">
                             <div class="integration-icon">
-                                <i class="<?php echo esc_attr($integration['icon'] ?? 'ph-file-text'); ?>"></i>
+                                <i class="ph <?php echo esc_attr(!empty($integration['icon']) ? $integration['icon'] : 'ph-magnifying-glass'); ?>"></i>
                             </div>
                             <div class="integration-details">
                                 <div class="integration-name">

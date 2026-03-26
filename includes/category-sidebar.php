@@ -44,7 +44,7 @@ $category_labels = [
 
 <div class="sidebar-wrapper">
     <div class="sidebar-title" style="margin-bottom: 15px;">
-        <h3 style="font-size: 16px; font-weight: 600; color: #333; margin: 0;">Outras consultas</h3>
+        <h3 style="font-size: 16px; font-weight: 600; margin: 0;">Outras consultas</h3>
     </div>
 
     <div class="sidebar-tabs">
@@ -76,7 +76,7 @@ $category_labels = [
 
                         <div class="sidebar-item-header">
                             <div class="sidebar-icon">
-                                <i class="<?php echo $integration['icon'] ?? 'ph-puzzle-piece'; ?>"></i>
+                                <i class="ph <?php echo esc_attr(!empty($integration['icon']) ? $integration['icon'] : 'ph-magnifying-glass'); ?>"></i>
                             </div>
                             <div class="sidebar-info">
                                 <span class="sidebar-item-title"><?php echo esc_html($integration['name']); ?></span>
