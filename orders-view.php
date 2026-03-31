@@ -96,7 +96,7 @@ if (!$is_ajax) {
             </table>
         <?php else: ?>
             <div class="orders-empty">
-                <i data-lucide="package" style="width:48px;height:48px;color:#ccc;margin-bottom:12px;"></i>
+                <i data-lucide="package" class="orders-empty-icon"></i>
                 <p>Você ainda não possui pedidos.</p>
                 <a href="<?php echo serc_get_dashboard_url(['view' => 'shop']); ?>" class="btn-shop-now">
                     <i data-lucide="store"></i> Ir para a Loja

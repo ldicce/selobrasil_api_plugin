@@ -78,26 +78,26 @@ if ($query->have_posts()) {
     <!-- 4. History Table Area -->
     <div class="dash-pane pane-full-width">
         <!-- Modern Filters -->
-        <form method="get" class="history-filters-inline" style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9;">
+        <form method="get" class="history-filters-inline">
             <input type="hidden" name="p" value="history">
             <div class="filter-field">
-                <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Início</label>
-                <input type="date" name="de" value="<?php echo esc_attr($de); ?>" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;">
+                <label class="filter-label">Início</label>
+                <input type="date" name="de" value="<?php echo esc_attr($de); ?>" class="filter-date-input">
             </div>
             <div class="filter-field">
-                <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Fim</label>
-                <input type="date" name="ate" value="<?php echo esc_attr($ate); ?>" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;">
+                <label class="filter-label">Fim</label>
+                <input type="date" name="ate" value="<?php echo esc_attr($ate); ?>" class="filter-date-input">
             </div>
             <div class="filter-field">
-                <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Tipo</label>
-                <select name="tipo" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; min-width: 150px;">
+                <label class="filter-label">Tipo</label>
+                <select name="tipo" class="filter-select-input">
                     <option value="">Todos</option>
                     <option value="cpf" <?php selected($type, 'cpf'); ?>>CPF</option>
                     <option value="cnpj" <?php selected($type, 'cnpj'); ?>>CNPJ</option>
                     <option value="veicular" <?php selected($type, 'veicular'); ?>>Veicular</option>
                 </select>
             </div>
-            <button type="submit" class="btn-consultar-small" style="height: 42px;">
+            <button type="submit" class="btn-consultar-small filter-submit-btn">
                 <i data-lucide="filter"></i> Filtrar
             </button>
         </form>

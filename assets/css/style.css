@@ -2844,6 +2844,7 @@ button {
     /* Sidebar Items (Category Sidebar) */
     .sidebar-item-desc {
         -webkit-line-clamp: 2;
+        line-clamp: 2;
     }
 
     /* Category View Mobile Adjustments */
@@ -3115,6 +3116,7 @@ button {
     margin: 0 0 8px 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -4921,6 +4923,16 @@ body.admin-bar .dashboard-wrapper {
     color: var(--text-muted);
 }
 
+.orders-empty-icon {
+    width: 48px;
+    height: 48px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .orders-empty p {
     font-size: 16px;
     margin: 0 0 8px 0;
@@ -5237,25 +5249,36 @@ body.admin-bar .dashboard-wrapper {
 }
 
 /* ============================================================
-   DARK MODE  – comprehensive overrides (v4.0)
+   DARK MODE  – overrides v6.0
+   Palette: ZERO GREEN, ZERO BLUE — Pure Neutral (Black/Gray)
    ============================================================ */
 
 /* 1. CSS variables for dark theme */
 .dark-mode {
-    --text-color: #E2E8F0;
-    --bg-color: #0F172A;
-    --card-bg: #1E293B;
-    --card-bg-elevated: #243550;
-    --border-color: #334155;
-    --text-muted: #94A3B8;
-    --primary-green: #34D399;
-    --primary-color: #34D399;
-    --primary-green-light: rgba(52, 211, 153, .12);
-    --primary-gradient: linear-gradient(135deg, #34D399, #10B981);
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, .3), 0 1px 3px rgba(0, 0, 0, .2);
-    --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, .4), 0 4px 10px rgba(0, 0, 0, .3);
-    --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, .5), 0 4px 6px -2px rgba(0, 0, 0, .3);
-    --sidebar-bg: #0B1222;
+    --text-color: #FFFFFF;
+    --bg-color: #0D0D0D;
+    --card-bg: #1A1A1A;
+    --card-bg-elevated: #222222;
+    --border-color: #2A2A2A;
+    --text-muted: #A0A0A0;
+    --text-disabled: #6B6B6B;
+
+    /* Accent neutro — sem verde, sem azul */
+    --primary-green: #A0A0A0;        /* alias compatibilidade → cinza */
+    --primary-color: #A0A0A0;
+    --primary-green-light: rgba(160, 160, 160, .10);
+    --primary-gradient: linear-gradient(135deg, #333333, #222222);
+
+    /* Tokens de CTA neutros */
+    --accent-cta-bg:   #2A2A2A;
+    --accent-cta-text: #FFFFFF;
+    --accent-cta-hover:#333333;
+    --accent-border:   #3A3A3A;
+
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, .4), 0 1px 3px rgba(0, 0, 0, .3);
+    --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, .5), 0 4px 10px rgba(0, 0, 0, .4);
+    --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, .6), 0 4px 6px -2px rgba(0, 0, 0, .4);
+    --sidebar-bg: #121212;
 }
 
 /* ---- Layout wrappers ---- */
@@ -5274,14 +5297,14 @@ body.admin-bar .dashboard-wrapper {
 
 /* Header dark glass */
 .dark-mode .area-header {
-    background: rgba(30, 41, 59, .85);
+    background: rgba(18, 18, 18, .92);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-color: var(--border-color);
 }
 
 .dark-mode .mobile-bottom-nav {
-    background: #1E293B;
+    background: #1A1A1A;
     border-color: var(--border-color);
 }
 
@@ -5349,7 +5372,7 @@ body.admin-bar .dashboard-wrapper {
 
 /* ---- Header ---- */
 .dark-mode .global-search input {
-    background: #1E293B;
+    background: #1A1A1A;
     color: var(--text-color);
     border-color: var(--border-color);
 }
@@ -5364,41 +5387,43 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .credits-capsule {
-    background: rgba(52, 211, 153, .12);
-    color: var(--primary-green);
-    border-color: rgba(52, 211, 153, .2);
+    background: rgba(255, 255, 255, .07);
+    color: var(--text-color);
+    border-color: var(--border-color);
 }
 
 .dark-mode .dashboard-crumb i,
 .dark-mode .dashboard-crumb svg {
-    color: var(--primary-green);
+    color: var(--text-muted);
 }
 
 /* Toggle button */
 .dark-mode .theme-toggle-btn {
-    border-color: #4A5568;
+    border-color: var(--border-color);
     color: #F6E05E;
 }
 
 .dark-mode .theme-toggle-btn:hover {
-    background: #2D3748;
+    background: #2A2A2A;
     border-color: #F6E05E;
     color: #F6E05E;
 }
 
 /* Header Help Button Dark Mode */
 .dark-mode .header-help-btn {
-    border-color: #4A5568;
+    border-color: var(--border-color);
     color: var(--text-muted);
 }
 
 .dark-mode .header-help-btn:hover {
-    background: #2D3748;
+    background: #2A2A2A;
     color: var(--text-color);
-    border-color: var(--text-color);
+    border-color: var(--border-color);
 }
 
 /* ---- Cards & containers ---- */
+/* Wrappers externos são transparentes — a separação visual
+   vem dos elementos internos (seções, cards, tabelas).       */
 .dark-mode .stat-card,
 .dark-mode .query-container,
 .dark-mode .history-container,
@@ -5409,12 +5434,19 @@ body.admin-bar .dashboard-wrapper {
 .dark-mode .shop-container,
 .dark-mode .reports-container,
 .dark-mode .report-summary-card,
-.dark-mode .report-chart-container,
+.dark-mode .report-chart-container {
+    background: transparent;
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* category-sidebar mantém fundo pois é um painel lateral distinto */
 .dark-mode .category-sidebar {
     background: var(--card-bg);
     border-color: var(--border-color);
     color: var(--text-color);
 }
+
 
 .dark-mode .action-card {
     background: var(--card-bg);
@@ -5423,14 +5455,15 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .action-card:hover {
-    border-color: var(--primary-green);
+    border-color: var(--border-color);
+    background: var(--card-bg-elevated);
 }
 
 /* Dark mode icon standard adjustments */
 .dark-mode .action-card i,
 .dark-mode .action-card svg {
-    background: rgba(52, 211, 153, .12);
-    color: var(--primary-green);
+    background: rgba(255, 255, 255, .06);
+    color: var(--text-muted);
 }
 
 .dark-mode .fav-card {
@@ -5441,22 +5474,22 @@ body.admin-bar .dashboard-wrapper {
 
 .dark-mode .fav-card--empty {
     background: transparent;
-    border-color: #3D5070;
+    border-color: #333333;
 }
 
 .dark-mode .fav-card--empty i,
 .dark-mode .fav-card--empty svg {
-    color: #64748B;
+    color: var(--text-disabled);
 }
 
 .dark-mode .fav-card i,
 .dark-mode .fav-card svg {
-    color: var(--primary-green);
+    color: var(--text-muted);
 }
 
 .dark-mode .fav-card--filled:hover {
-    border-color: var(--primary-green);
-    box-shadow: 0 0 0 3px rgba(52, 211, 153, .12);
+    border-color: #3A3A3A;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .05);
 }
 
 /* ---- Reports Redesign — Dark Mode ---- */
@@ -5469,11 +5502,11 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .reports-filters-panel-header:hover {
-    background: rgba(52, 211, 153, .04);
+    background: rgba(255, 255, 255, .03);
 }
 
 .dark-mode .reports-metrics-panel-header {
-    background: rgba(52, 211, 153, .04);
+    background: rgba(255, 255, 255, .03);
     border-color: var(--border-color);
 }
 
@@ -5483,11 +5516,11 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .reports-metric-row--highlight {
-    background: rgba(52, 211, 153, .05);
+    background: rgba(255, 255, 255, .04);
 }
 
 .dark-mode .reports-metric-row--highlight:hover {
-    background: rgba(52, 211, 153, .09);
+    background: rgba(255, 255, 255, .07);
 }
 
 .dark-mode .reports-metric-icon {
@@ -5496,18 +5529,18 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .reports-metric-row--queries .reports-metric-icon {
-    background: rgba(52, 211, 153, .15);
-    border-color: rgba(52, 211, 153, .2);
+    background: rgba(255, 255, 255, .08);
+    border-color: var(--border-color);
 }
 
 .dark-mode .reports-metric-row--credits .reports-metric-icon {
-    background: rgba(245, 158, 11, .15);
+    background: rgba(245, 158, 11, .12);
     border-color: rgba(245, 158, 11, .2);
 }
 
 .dark-mode .reports-metric-row--balance .reports-metric-icon {
-    background: rgba(59, 130, 246, .15);
-    border-color: rgba(59, 130, 246, .2);
+    background: rgba(255, 255, 255, .06);
+    border-color: var(--border-color);
 }
 
 .dark-mode .reports-metrics-footer,
@@ -5532,14 +5565,14 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .badge-query {
-    background: rgba(52, 211, 153, .15);
-    color: #6EE7B7;
-    border-color: rgba(52, 211, 153, .3);
+    background: rgba(255, 255, 255, .08);
+    color: var(--text-color);
+    border-color: var(--border-color);
 }
 
-.dark-mode .reports-active-filter-pill {
-    background: rgba(52, 211, 153, .1);
-    border-color: rgba(52, 211, 153, .2);
+/* ── Pill de filtro ativo — ocultar no dark mode (redundante com botões) ── */
+.dark-mode .reports-active-filter-row {
+    display: none;
 }
 
 .dark-mode .reports-custom-range {
@@ -5554,23 +5587,25 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .report-filter-btn:hover {
-    background: rgba(52, 211, 153, .08);
-    color: var(--primary-green);
-    border-color: rgba(52, 211, 153, .3);
+    background: #2A2A2A;
+    color: var(--text-color);
+    border-color: #3A3A3A;
 }
 
 .dark-mode .report-filter-btn.active {
-    background: var(--primary-green);
-    color: #fff;
-    border-color: var(--primary-green);
+    background: var(--accent-cta-bg);
+    color: var(--accent-cta-text);
+    border-color: var(--accent-border);
 }
 
 /* ---- Tables ---- */
 .dark-mode .history-table th,
 .dark-mode .integration-header,
-.dark-mode .orders-table thead {
-    background: #2D3748;
+.dark-mode .orders-table thead,
+.dark-mode .orders-table thead tr {
+    background: rgba(255, 255, 255, .03);
     color: var(--text-muted);
+    border-color: var(--border-color);
 }
 
 .dark-mode .history-table td,
@@ -5593,7 +5628,7 @@ body.admin-bar .dashboard-wrapper {
 .dark-mode .integration-row:hover,
 .dark-mode .history-table tr:hover,
 .dark-mode .orders-table tbody tr:hover {
-    background: #243550;
+    background: #2A2A2A;
 }
 
 .dark-mode .status-badge {
@@ -5649,6 +5684,8 @@ body.admin-bar .dashboard-wrapper {
 }
 
 /* ---- Buttons ---- */
+/* No dark mode os botões CTA usam azul slate fosco.
+   Zero verde nos elementos de interface. */
 .dark-mode .filter-btn,
 .dark-mode .btn-buy-credits,
 .dark-mode .btn-consultar-green,
@@ -5656,20 +5693,46 @@ body.admin-bar .dashboard-wrapper {
 .dark-mode .btn-shop-now,
 .dark-mode .btn-order-view,
 .dark-mode .sidebar-item-btn {
-    background: var(--primary-gradient);
-    color: #0F172A;
+    background: var(--accent-cta-bg);
+    color: var(--accent-cta-text);
+    border: 1px solid var(--accent-border);
 }
 
+.dark-mode .filter-btn:hover,
+.dark-mode .btn-buy-credits:hover,
+.dark-mode .btn-consultar-green:hover,
+.dark-mode .btn-settings-save:hover,
+.dark-mode .btn-shop-now:hover,
+.dark-mode .btn-order-view:hover,
+.dark-mode .sidebar-item-btn:hover {
+    background: var(--accent-cta-hover);
+    color: #eff6ff;
+}
+
+/* ---- btn-consultar-small no dark mode ---- */
+.dark-mode .btn-consultar-small {
+    background: var(--accent-cta-bg);
+    color: var(--accent-cta-text);
+    border: 1px solid var(--accent-border);
+}
+
+.dark-mode .btn-consultar-small:hover {
+    background: var(--accent-cta-hover);
+    color: #eff6ff;
+}
+
+
+
 .dark-mode .action-btn {
-    background: rgba(52, 211, 153, .12);
+    background: rgba(96, 165, 250, .10);
     color: var(--primary-green);
-    border-color: rgba(52, 211, 153, .25);
+    border-color: rgba(96, 165, 250, .2);
 }
 
 .dark-mode .action-btn:hover {
-    background: var(--primary-green);
-    color: #0F172A;
-    border-color: var(--primary-green);
+    background: var(--accent-cta-bg);
+    color: var(--accent-cta-text);
+    border-color: var(--accent-border);
 }
 
 .dark-mode .btn-see-all {
@@ -5679,15 +5742,15 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .btn-see-all:hover {
-    border-color: var(--primary-green);
+    border-color: rgba(96, 165, 250, .3);
     color: var(--primary-green);
-    background: rgba(52, 211, 153, .08);
+    background: rgba(96, 165, 250, .06);
 }
 
 /* ---- Inputs & forms ---- */
 .dark-mode .form-wrapper,
 .dark-mode .filter-form {
-    background: #243550;
+    background: #1A1A1A;
     border-color: var(--border-color);
 }
 
@@ -5703,7 +5766,7 @@ body.admin-bar .dashboard-wrapper {
 .dark-mode input,
 .dark-mode select,
 .dark-mode textarea {
-    background: #1E293B !important;
+    background: #1A1A1A !important;
     border-color: var(--border-color) !important;
     color: var(--text-color) !important;
 }
@@ -5722,13 +5785,13 @@ body.admin-bar .dashboard-wrapper {
 .dark-mode .form-wrapper input:focus,
 .dark-mode .settings-form input:focus,
 .dark-mode .category-search input:focus {
-    border-color: var(--primary-green) !important;
-    box-shadow: 0 0 0 3px rgba(52, 211, 153, .1);
+    border-color: #4A4A4A !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .06);
 }
 
 /* ---- Settings tabs ---- */
 .dark-mode .settings-tabs {
-    background: #1E293B;
+    background: #1A1A1A;
     box-shadow: none;
 }
 
@@ -5737,19 +5800,19 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .settings-tab:hover {
-    background: #243550;
-    color: var(--primary-green);
+    background: #2A2A2A;
+    color: var(--text-color);
 }
 
 .dark-mode .settings-tab.active {
-    background: var(--primary-green);
-    color: #0F172A;
+    background: var(--accent-cta-bg);
+    color: var(--accent-cta-text);
     box-shadow: none;
 }
 
 .dark-mode .settings-tab.active i,
 .dark-mode .settings-tab.active svg {
-    color: #0F172A;
+    color: var(--accent-cta-text);
 }
 
 .dark-mode .settings-panel h3 {
@@ -5779,48 +5842,49 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .category-tab:hover {
-    color: var(--primary-green);
+    color: var(--text-color);
 }
 
 .dark-mode .category-tab.active {
-    color: var(--primary-green);
-    border-bottom-color: var(--primary-green);
+    color: var(--text-color);
+    border-bottom-color: #4A4A4A;
 }
 
 .dark-mode .integration-value {
-    color: var(--primary-green);
+    color: var(--text-color);
+    font-weight: 600;
 }
 
 .dark-mode .integration-icon {
-    background: rgba(52, 211, 153, .12);
+    background: rgba(255, 255, 255, .06);
 }
 
 .dark-mode .integration-icon i,
 .dark-mode .integration-icon svg {
-    color: var(--primary-green);
+    color: var(--text-muted);
 }
 
 /* Category sidebar */
 .dark-mode .sidebar-tab {
-    background: #243550;
+    background: #222222;
     border-color: var(--border-color);
     color: var(--text-muted);
 }
 
 .dark-mode .sidebar-tab:hover {
-    background: rgba(52, 211, 153, .1);
-    color: var(--primary-green);
-    border-color: var(--primary-green);
+    background: #2A2A2A;
+    color: var(--text-color);
+    border-color: #3A3A3A;
 }
 
 .dark-mode .sidebar-tab.active {
-    background: var(--primary-green);
-    color: #0F172A;
-    border-color: var(--primary-green);
+    background: #2A2A2A;
+    color: var(--text-color);
+    border-color: #4A4A4A;
 }
 
 .dark-mode .sidebar-search input {
-    background: #1E293B;
+    background: #1A1A1A;
     border-color: var(--border-color);
     color: var(--text-color);
 }
@@ -5836,17 +5900,17 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .sidebar-item:hover {
-    background: #243550;
-    border-color: var(--border-color);
+    background: #2A2A2A;
+    border-color: #3A3A3A;
 }
 
 .dark-mode .sidebar-item.active {
-    background: rgba(52, 211, 153, .1);
-    border-color: var(--primary-green);
+    background: #2A2A2A;
+    border-color: #4A4A4A;
 }
 
 .dark-mode .sidebar-item-icon {
-    color: var(--primary-green);
+    color: var(--text-muted);
 }
 
 .dark-mode .sidebar-item-name {
@@ -5891,7 +5955,8 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .shop-card__price ins {
-    color: var(--primary-green);
+    color: var(--text-color);
+    font-weight: 700;
 }
 
 .dark-mode .shop-card__price del {
@@ -5899,13 +5964,14 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .shop-card__btn {
-    background: rgba(52, 211, 153, .12);
-    color: var(--primary-green);
+    background: var(--accent-cta-bg) !important;
+    color: var(--accent-cta-text) !important;
+    border-color: var(--accent-border) !important;
 }
 
 .dark-mode .shop-card__btn:hover {
-    background: var(--primary-green);
-    color: #0F172A;
+    background: var(--accent-cta-hover) !important;
+    color: #eff6ff !important;
 }
 
 .dark-mode .shop-cat-link:hover {
@@ -5919,14 +5985,14 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .shop-cat-link.active {
-    background: rgba(52, 211, 153, .12);
-    color: var(--primary-green);
-    border-color: rgba(52, 211, 153, .2);
+    background: #2A2A2A;
+    color: var(--text-color);
+    border-color: var(--border-color);
 }
 
 .dark-mode .shop-cat-link.active span {
-    background: var(--primary-green);
-    color: #0F172A;
+    background: #333333;
+    color: var(--text-color);
 }
 
 .dark-mode .shop-page-link {
@@ -5936,34 +6002,34 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .shop-page-link.current {
-    background: var(--primary-green);
-    color: #0F172A;
-    border-color: var(--primary-green);
+    background: #2A2A2A;
+    color: var(--text-color);
+    border-color: var(--border-color);
 }
 
 /* ---- Reports ---- */
 .dark-mode .report-filter-btn {
-    background: #243550;
+    background: #1A1A1A;
     border-color: var(--border-color);
     color: var(--text-muted);
 }
 
 .dark-mode .report-filter-btn.active,
 .dark-mode .report-filter-btn:hover {
-    background: rgba(52, 211, 153, .12);
-    color: var(--primary-green);
-    border-color: var(--primary-green);
+    background: #2A2A2A;
+    color: var(--text-color);
+    border-color: var(--border-color);
 }
 
 .dark-mode .usage-filter-btn {
-    background: #243550;
+    background: #1A1A1A;
     border-color: var(--border-color);
     color: var(--text-muted);
 }
 
 .dark-mode .usage-filter-btn.active {
-    background: var(--primary-green);
-    color: #0F172A;
+    background: var(--accent-cta-bg);
+    color: var(--accent-cta-text);
 }
 
 /* ---- Activity / timeline ---- */
@@ -5980,8 +6046,8 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .activity-time {
-    color: #64748B;
-    background: #1E293B;
+    color: var(--text-disabled);
+    background: #222222;
 }
 
 /* ---- Favorites selector modal ---- */
@@ -6004,7 +6070,7 @@ body.admin-bar .dashboard-wrapper {
 
 .dark-mode .fav-selector-close:hover {
     color: var(--text-color);
-    background: #243550;
+    background: #2A2A2A;
 }
 
 .dark-mode .fav-selector-search {
@@ -6012,7 +6078,7 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .fav-selector-search input {
-    background: #0F172A;
+    background: #1A1A1A;
     border-color: var(--border-color);
     color: var(--text-color);
 }
@@ -6031,8 +6097,8 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .fav-selector-tab.active {
-    color: var(--primary-green);
-    border-bottom-color: var(--primary-green);
+    color: var(--text-color);
+    border-bottom-color: #4A4A4A;
 }
 
 .dark-mode .fav-selector-item {
@@ -6040,12 +6106,12 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .fav-selector-item:hover {
-    background: #243550;
+    background: #2A2A2A;
 }
 
 .dark-mode .fav-selector-item i,
 .dark-mode .fav-selector-item svg {
-    color: var(--primary-green);
+    color: var(--text-muted);
 }
 
 .dark-mode .fav-selector-item span {
@@ -6070,46 +6136,46 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .search-result-item:hover {
-    background: #243550;
+    background: #2A2A2A;
 }
 
 .dark-mode .search-result-item i,
 .dark-mode .search-result-item svg {
-    color: var(--primary-green);
+    color: var(--text-muted);
 }
 
 /* ---- Mobile nav ---- */
 .dark-mode .mobile-nav-item {
-    color: #64748B;
+    color: var(--text-disabled);
 }
 
 .dark-mode .mobile-nav-item.active {
-    color: var(--primary-green);
+    color: var(--text-color);
 }
 
 .dark-mode .mobile-nav-item.nav-highlight {
-    color: var(--primary-green);
+    color: var(--text-color);
 }
 
 .dark-mode .mobile-nav-item.nav-highlight i,
 .dark-mode .mobile-nav-item.nav-highlight svg {
-    background: rgba(52, 211, 153, .15);
-    border-color: #1E293B;
+    background: rgba(255, 255, 255, .08);
+    border-color: #222222;
 }
 
 /* ---- Mobile layout ---- */
 @media (max-width: 768px) {
     .dark-mode .area-header {
-        background: rgba(30, 41, 59, .95);
+        background: rgba(13, 13, 13, .97);
         border-color: var(--border-color);
     }
 
     .dark-mode .global-search input {
-        background: #2D3748;
+        background: #1A1A1A;
     }
 
     .dark-mode .credits-capsule {
-        background: rgba(52, 211, 153, .12);
+        background: rgba(255, 255, 255, .07);
     }
 
     .dark-mode .sidebar-wrapper {
@@ -6148,18 +6214,21 @@ body.admin-bar .dashboard-wrapper {
     color: var(--text-muted);
 }
 
-/* ── 2. dash-action-bar (action bar strip on dashboard) ── */
+/* ── 2. dash-action-bar — transparente, sem banda de fundo ── */
 .dark-mode .dash-action-bar {
-    background: var(--card-bg);
-    border-color: var(--border-color);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 4px 0;
 }
 
 .dark-mode .dash-action-item {
     border-color: var(--border-color);
+    background: #1A1A1A;
 }
 
 .dark-mode .dash-action-item:hover {
-    background: rgba(255, 255, 255, .03);
+    background: #222222;
 }
 
 .dark-mode .dash-action-item .action-label {
@@ -6173,6 +6242,7 @@ body.admin-bar .dashboard-wrapper {
 /* ── 3. Histórico — filter form row background ── */
 .dark-mode .history-filters-inline {
     border-color: var(--border-color) !important;
+    background: transparent;
 }
 
 .dark-mode .history-filters-inline label {
@@ -6233,7 +6303,7 @@ body.admin-bar .dashboard-wrapper {
 
 .dark-mode .shop-categories-list a.active,
 .dark-mode .shop-cat-btn.active {
-    background: rgba(52, 211, 153, .12);
+    background: rgba(96, 165, 250, .1);
     color: var(--primary-green);
 }
 
@@ -6253,13 +6323,13 @@ body.admin-bar .dashboard-wrapper {
 }
 
 .dark-mode .dash-summary-tile--green {
-    background: rgba(52, 211, 153, .07) !important;
-    border-color: rgba(52, 211, 153, .15) !important;
+    background: rgba(255, 255, 255, .04) !important;
+    border-color: rgba(255, 255, 255, .08) !important;
 }
 
 .dark-mode .dash-summary-tile--blue {
-    background: rgba(59, 130, 246, .07) !important;
-    border-color: rgba(59, 130, 246, .15) !important;
+    background: rgba(255, 255, 255, .04) !important;
+    border-color: rgba(255, 255, 255, .08) !important;
 }
 
 .dark-mode .dash-summary-tile--amber {
@@ -6285,7 +6355,7 @@ body.admin-bar .dashboard-wrapper {
 
 /* ── 8. fav-card--empty dashed border in dark ── */
 .dark-mode .fav-card--empty {
-    border-color: #2D4060;
+    border-color: #333333;
     color: var(--text-muted);
     background: rgba(255, 255, 255, .02);
 }
@@ -6308,24 +6378,480 @@ body.admin-bar .dashboard-wrapper {
     border-color: var(--border-color);
 }
 
-/* ── 11. Reports: filter panel border left stays green ── */
+/* ── 11. Reports: filter panel border left — neutro ── */
 .dark-mode .reports-filters-panel {
-    border-left-color: var(--primary-green) !important;
+    border-left-color: #3A3A3A !important;
 }
 
-/* ── 12. Consultas — integration-table container ── */
+/* ── 12. Consultas — integration-table container transparente ── */
 .dark-mode .pane-full-width .integration-table,
 .dark-mode .dash-pane .integration-table {
     background: transparent;
     border: none;
 }
 
-/* ── 13. Consultas header strip text ── */
+/* ── 13. Consultas/Histórico — header row alinhada com card ── */
 .dark-mode .integration-header {
-    background: rgba(255, 255, 255, .04) !important;
-    border-color: var(--border-color) !important;
+    background: rgba(255, 255, 255, .03) !important;
+    border-top: 1px solid var(--border-color) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 
 .dark-mode .integration-header span {
     color: var(--text-muted) !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* ── 14. Histórico — header da tabela harmonizado ── */
+.dark-mode .history-table thead th,
+.dark-mode .history-table thead tr {
+    background: rgba(255, 255, 255, .03) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* =============================================================
+   HISTÓRICO — Classes do formulário de filtros
+   ============================================================= */
+
+/* Form wrapper */
+.history-filters-inline {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
+}
+
+/* Label */
+.filter-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.4px;
+}
+
+/* Date input */
+.filter-date-input {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    font-size: 13px;
+    background: transparent;
+    color: var(--text-color);
+    transition: border-color 0.2s;
+}
+
+.filter-date-input:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, .1);
+}
+
+/* Select input */
+.filter-select-input {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    font-size: 13px;
+    min-width: 150px;
+    background: transparent;
+    color: var(--text-color);
+    transition: border-color 0.2s;
+    cursor: pointer;
+}
+
+.filter-select-input:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, .1);
+}
+
+/* Submit button height adjustment */
+.filter-submit-btn {
+    height: 42px;
+}
+
+/* Dark mode — form separator uses dark border */
+.dark-mode .history-filters-inline {
+    border-bottom-color: var(--border-color) !important;
+}
+
+/* Dark mode — date/select inputs inherit the global dark override */
+.dark-mode .filter-date-input,
+.dark-mode .filter-select-input {
+    background: #1A1A1A !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+.dark-mode .filter-date-input:focus,
+.dark-mode .filter-select-input:focus {
+    border-color: #4A4A4A !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .06) !important;
+}
+
+/* =============================================================
+   DASHBOARD — action bar transparente no light mode também
+   ============================================================= */
+.dark-mode .dash-action-bar,
+.dash-action-bar {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* =============================================================
+   DARK MODE v5.0 — Pedidos, Loja, ícones e overrides finais
+   (ZERO VERDE nos elementos de interface)
+   ============================================================= */
+
+/* 1. Ícone do h2 em Pedidos/Configuração — neutro */
+.dark-mode .account-header h2 i,
+.dark-mode .account-header h2 svg,
+.dark-mode .page-header-icon {
+    color: var(--text-muted);
+}
+
+/* 2. Estado vazio de Pedidos — ícone slate */
+.dark-mode .orders-empty i,
+.dark-mode .orders-empty svg {
+    color: #475569;
+}
+
+/* 3. Botão WooCommerce "Comprar" / "add_to_cart" na Loja */
+.dark-mode .woocommerce .button,
+.dark-mode .woocommerce a.button,
+.dark-mode .woocommerce button.button,
+.dark-mode .woocommerce input.button,
+.dark-mode .woocommerce .added_to_cart {
+    background: var(--accent-cta-bg) !important;
+    color: var(--accent-cta-text) !important;
+    border-color: var(--accent-border) !important;
+}
+
+.dark-mode .woocommerce .button:hover,
+.dark-mode .woocommerce a.button:hover,
+.dark-mode .woocommerce button.button:hover {
+    background: var(--accent-cta-hover) !important;
+    color: #eff6ff !important;
+}
+
+/* 4. Botão "Adquirir Saldo" (dash-action-btn-primary) */
+.dark-mode .dash-action-btn-primary {
+    background: var(--accent-cta-bg);
+    color: var(--accent-cta-text);
+    border: 1px solid var(--accent-border);
+    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.4);
+}
+
+.dark-mode .dash-action-btn-primary:hover {
+    background: var(--accent-cta-hover);
+    color: #eff6ff;
+}
+
+/* 5. Link "Consultar →" nos dash-metric-cards (CPF/CNPJ/Auto/Score) */
+.dark-mode .dash-metric-card .card-trend {
+    color: var(--primary-green);
+}
+
+/* 6. Botão "Consultar" na tabela de Consultas (integration-row) */
+.dark-mode .btn-consultar-green {
+    background: var(--accent-cta-bg) !important;
+    color: var(--accent-cta-text) !important;
+    border-color: var(--accent-border) !important;
+    box-shadow: none !important;
+}
+
+.dark-mode .btn-consultar-green:hover {
+    background: var(--accent-cta-hover) !important;
+    color: #eff6ff !important;
+}
+
+/* 7. Categoria ativa na Loja */
+.dark-mode .shop-categories-list a.active,
+.dark-mode .shop-cat-btn.active {
+    background: #2A2A2A;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+/* 8. Botão de filtro ativo nos Relatórios */
+.dark-mode .report-filter-btn.active {
+    background: #2A2A2A;
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+/* =============================================================
+   DARK MODE v5.0 — dash-metric-card (CPF/CNPJ/Auto/Score)
+   Remove o fundo verde escuro #235347 do light mode
+   ============================================================= */
+.dark-mode .dash-metric-card {
+    background: #1A1A1A;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.dark-mode .dash-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+    border-color: #3A3A3A;
+}
+
+.dark-mode .dash-metric-card::after {
+    opacity: 0.03;
+}
+
+.dark-mode .dash-metric-card .card-name {
+    color: var(--text-color);
+}
+
+.dark-mode .dash-metric-card .card-desc {
+    color: var(--text-muted);
+}
+
+.dark-mode .dash-metric-card .card-badge {
+    background: rgba(255, 255, 255, .07);
+    color: var(--text-muted);
+}
+
+.dark-mode .dash-metric-card .badge-normal,
+.dark-mode .dash-metric-card .badge-optimal {
+    background: rgba(255, 255, 255, .08);
+    color: var(--text-muted);
+}
+
+.dark-mode .dash-metric-card .badge-high {
+    background: rgba(245, 158, 11, .15);
+    color: #fcd34d;
+}
+
+.dark-mode .dash-metric-card .card-trend {
+    color: var(--text-muted);
+}
+
+.dark-mode .dash-metric-card .card-trend i,
+.dark-mode .dash-metric-card .card-trend svg {
+    color: var(--text-muted);
+}
+
+.dark-mode .dash-metric-card .trend-up {
+    color: #34d399;   /* verde semântico: positivo/crescimento */
+}
+
+.dark-mode .dash-metric-card .trend-down {
+    color: #f87171;
+}
+
+.dark-mode .dash-metric-card .trend-neutral {
+    color: var(--text-muted);
+}
+
+.dark-mode .dash-metric-card .card-value {
+    color: var(--text-color);
+}
+
+.dark-mode .dash-metric-card .card-unit {
+    color: var(--text-muted);
+}
+
+/* Estado ativo dos cards (categoria selecionada) */
+.dark-mode .dash-metric-card.active {
+    background: #222222;
+    border-color: #4A4A4A;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, .06);
+}
+
+/* ============================================================
+   DARK MODE v6.0 — SIDEBAR NEUTRAL OVERRIDE
+   Remove todo verde (#71D88B, #235347) da sidebar no dark mode
+   ============================================================ */
+
+/* Fundo da sidebar */
+.dark-mode .area-sidebar {
+    background: #121212 !important;
+}
+
+/* Logo circle — cinza neutro */
+.dark-mode .logo-circle {
+    background: #2A2A2A !important;
+    color: #FFFFFF !important;
+}
+
+/* Avatar do usuário na sidebar */
+.dark-mode .area-sidebar .user-avatar {
+    background: #2A2A2A !important;
+    color: #FFFFFF !important;
+}
+
+/* Nav link padrão */
+.dark-mode .nav-link {
+    color: #A0A0A0;
+    background: transparent;
+}
+
+.dark-mode .nav-link:hover {
+    background: rgba(255, 255, 255, .05) !important;
+    color: #FFFFFF !important;
+}
+
+/* Nav link ATIVO — remover verde, usar cinza elevado */
+.dark-mode .nav-link.active {
+    background: #2A2A2A !important;
+    color: #FFFFFF !important;
+    box-shadow: none !important;
+}
+
+.dark-mode .nav-link.active .nav-icon {
+    color: #FFFFFF !important;
+}
+
+.dark-mode .nav-link.active .nav-text {
+    color: #FFFFFF !important;
+    font-weight: 700;
+}
+
+.dark-mode .nav-link.active .nav-desc {
+    color: #A0A0A0 !important;
+}
+
+.dark-mode .nav-link.active .nav-indicator {
+    background: #A0A0A0 !important;
+}
+
+/* Modo collapsed — ícone ativo */
+.dark-mode.dashboard-wrapper.sidebar-collapsed .nav-link.active .nav-icon,
+.dark-mode .dashboard-wrapper.sidebar-collapsed .nav-link.active .nav-icon {
+    background: #2A2A2A !important;
+    color: #FFFFFF !important;
+    box-shadow: none !important;
+}
+
+/* Collapsed inactive icon */
+.dark-mode .dashboard-wrapper.sidebar-collapsed .nav-icon {
+    background: rgba(255, 255, 255, .05) !important;
+}
+
+/* Sidebar footer divider */
+.dark-mode .sidebar-footer {
+    border-top-color: rgba(255, 255, 255, .06) !important;
+}
+
+/* ── Scrollbar da área de métricas ── */
+.dark-mode .dash-metrics-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .15);
+}
+.dark-mode .dash-metrics-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, .28);
+}
+
+/* ── dash-status-badge (indicador "Online") ── */
+.dark-mode .dash-status-badge {
+    background: rgba(255, 255, 255, .06);
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, .12);
+}
+.dark-mode .dash-status-badge .status-dot {
+    background: #A0A0A0;
+    box-shadow: none;
+}
+
+/* ── Dash summary footer link (cinza) ── */
+.dark-mode .dash-summary-footer__link {
+    color: #A0A0A0;
+}
+.dark-mode .dash-summary-footer__link:hover {
+    color: #FFFFFF;
+}
+
+/* ── Avatar no header ── */
+.dark-mode .header-right .user-avatar {
+    border-color: #3A3A3A !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, .05) !important;
+}
+
+/* ── status-completed badge — manter semântica verde ── */
+/* (verde em badges de status é semântico, não de interface) */
+
+/* ── .dash-action-btn-primary no dark mode ── */
+.dark-mode .dash-action-btn-primary {
+    background: #2A2A2A !important;
+    color: #FFFFFF !important;
+    border: 1px solid #3A3A3A !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .4) !important;
+}
+.dark-mode .dash-action-btn-primary:hover {
+    background: #333333 !important;
+    color: #FFFFFF !important;
+}
+
+/* ── Help banner ── */
+.dark-mode .help-banner {
+    background: linear-gradient(135deg, #222222 0%, #1A1A1A 100%);
+}
+
+/* ── dash-pane hover na tabela de integraçao ── */
+.dark-mode .dash-pane .integration-row:hover {
+    background: #2A2A2A !important;
+    opacity: 1;
+}
+
+/* ── Settings tab ativo ── */
+.dark-mode .settings-tab.active {
+    background: #2A2A2A !important;
+    color: #FFFFFF !important;
+    box-shadow: none;
+}
+.dark-mode .settings-tab.active i,
+.dark-mode .settings-tab.active svg {
+    color: #FFFFFF !important;
+}
+
+/* ── usage-filter-btn ativo ── */
+.dark-mode .usage-filter-btn.active {
+    background: #2A2A2A;
+    color: #FFFFFF;
+    border-color: #4A4A4A;
+}
+
+/* ── WooCommerce buttons ── */
+.dark-mode .woocommerce .button,
+.dark-mode .woocommerce a.button,
+.dark-mode .woocommerce button.button,
+.dark-mode .woocommerce input.button,
+.dark-mode .woocommerce .added_to_cart {
+    background: #2A2A2A !important;
+    color: #FFFFFF !important;
+    border-color: #3A3A3A !important;
+}
+.dark-mode .woocommerce .button:hover,
+.dark-mode .woocommerce a.button:hover,
+.dark-mode .woocommerce button.button:hover {
+    background: #333333 !important;
+    color: #FFFFFF !important;
+}
+
+/* ── Scrollbar global no dark mode ── */
+.dark-mode ::-webkit-scrollbar-thumb {
+    background: #2A2A2A;
+}
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: #3A3A3A;
+}
+.dark-mode ::-webkit-scrollbar-track {
+    background: #121212;
 }
