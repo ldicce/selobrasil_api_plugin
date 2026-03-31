@@ -35,8 +35,8 @@ if (!defined('ABSPATH'))
         rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Lucide Icons (Modern SVG Line Icons) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Dashboard Navigation Script -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -49,30 +49,32 @@ if (!defined('ABSPATH'))
     <script
         src="<?php echo plugins_url('assets/js/serc-frontend.js', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>?v=3.2.1"></script>
 
-    <!-- LOGO AREA -->
-    <div class="area-logo">
-        <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>"
-            style="display:flex;align-items:center;text-decoration:none;">
-            <img src="<?php echo plugins_url('assets/img/LOGO.svg', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>"
-                alt="Selo Brasil" style="height: 40px;">
-        </a>
-    </div>
+    <!-- Initialize Lucide Icons (must run after DOM is ready) -->
+    <script>
+        function serc_initLucide() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+        document.addEventListener('DOMContentLoaded', serc_initLucide);
+    </script>
+
+    <!-- LOGO AREA REPLACED BY SIDEBAR -->
 
     <!-- HEADER -->
     <div class="area-header">
         <div class="header-left">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" class="dashboard-crumb">
-                <i class="ph-fill ph-squares-four"></i> Dashboard
+                <i data-lucide="layout-dashboard"></i> Dashboard
             </a>
             <!-- Mobile Logo (Visible only on mobile) -->
-            <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" class="mobile-logo"
-                style="display:none; align-items:center; gap:8px; text-decoration:none; color:#1a1a1a; font-weight:700; font-size:18px;">
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" class="mobile-logo">
                 <img src="<?php echo plugins_url('assets/img/LOGO.svg', dirname(__DIR__) . '/serpro-cnpj-quotas.php'); ?>"
-                    alt="Selo Brasil" style="height: 32px;">
-                <span style="color:var(--primary-green);">Selo Brasil</span>
+                    alt="Selo Brasil" class="mobile-logo-img">
+                <span class="mobile-logo-text">Selo Brasil</span>
             </a>
             <div class="global-search">
-                <i class="ph ph-magnifying-glass"></i>
+                <i data-lucide="search"></i>
                 <input type="text" placeholder="Buscar consultas">
                 <div class="global-search-results"></div>
             </div>
@@ -83,12 +85,30 @@ if (!defined('ABSPATH'))
                     style="width: 18px; height: 18px; vertical-align: middle;"> Créditos:
                 <?php echo number_format(serc_get_user_credits(), 2, ',', ('.')); ?>
             </div>
-            <button id="serc-theme-toggle" class="theme-toggle-btn" title="Alternar tema" aria-label="Alternar modo escuro/claro">
-                <i class="ph-bold ph-moon" id="serc-theme-icon"></i>
-            </button>
-            <a href="<?php echo serc_get_dashboard_url(['view' => 'settings']); ?>" class="user-avatar-link" title="Configuração">
-                <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User" class="user-avatar">
+            <a href="#" class="header-help-btn" title="Precisar de ajuda? Consulte nossa página.">
+                <i data-lucide="help-circle"></i>
             </a>
+            <button id="serc-theme-toggle" class="theme-toggle-btn" title="Alternar tema" aria-label="Alternar modo escuro/claro">
+                <i data-lucide="moon" id="serc-theme-icon"></i>
+            </button>
+            <!-- User Avatar Dropdown -->
+            <div class="user-avatar-wrap" id="serc-user-menu-wrap">
+                <button type="button" class="user-avatar-link" id="serc-user-menu-btn" title="Menu do usuário" aria-haspopup="true" aria-expanded="false">
+                    <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User" class="user-avatar">
+                    <i data-lucide="chevron-down" style="width: 16px; height: 16px; margin-left: 6px; color: var(--text-muted); transition: transform 0.2s;"></i>
+                </button>
+                <div class="user-dropdown" id="serc-user-dropdown" role="menu">
+                    <a href="<?php echo serc_get_dashboard_url(['view' => 'settings']); ?>" class="user-dropdown-item" role="menuitem">
+                        <i data-lucide="settings"></i>
+                        <span>Configurações da conta</span>
+                    </a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="<?php echo wp_logout_url(home_url()); ?>" class="user-dropdown-item user-dropdown-item--danger" role="menuitem">
+                        <i data-lucide="log-out"></i>
+                        <span>Sair</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -96,26 +116,26 @@ if (!defined('ABSPATH'))
     <div class="mobile-bottom-nav">
         <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>"
             class="mobile-nav-item <?php echo (!isset($_GET['view']) || $_GET['view'] === 'dashboard') ? 'active' : ''; ?>">
-            <i class="ph-fill ph-house"></i>
+            <i data-lucide="house"></i>
             <span>Início</span>
         </a>
         <a href="<?php echo serc_get_dashboard_url(['view' => 'history']); ?>"
             class="mobile-nav-item <?php echo (isset($_GET['view']) && $_GET['view'] === 'history') ? 'active' : ''; ?>">
-            <i class="ph-bold ph-clock-counter-clockwise"></i>
+            <i data-lucide="history"></i>
             <span>Histórico</span>
         </a>
         <a href="<?php echo serc_get_dashboard_url(['view' => 'category']); ?>"
             class="mobile-nav-item nav-highlight <?php echo (isset($_GET['view']) && ($_GET['view'] === 'category' || $_GET['view'] === 'query')) ? 'active' : ''; ?>">
-            <i class="ph-bold ph-magnifying-glass"></i>
+            <i data-lucide="search"></i>
             <span>Consultas</span>
         </a>
         <a href="https://wa.me/5511999999999" target="_blank" class="mobile-nav-item">
-            <i class="ph-fill ph-whatsapp-logo"></i>
+            <i data-lucide="message-circle"></i>
             <span>Suporte</span>
         </a>
         <a href="<?php echo serc_get_dashboard_url(['view' => 'settings']); ?>"
             class="mobile-nav-item <?php echo (isset($_GET['view']) && $_GET['view'] === 'settings') ? 'active' : ''; ?>">
-            <i class="ph-fill ph-user"></i>
+            <i data-lucide="user"></i>
             <span>Conta</span>
         </a>
     </div>

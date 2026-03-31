@@ -59,7 +59,7 @@ $category_labels = [
 
     <div class="sidebar-search">
         <div class="search-box">
-            <i class="ph-magnifying-glass"></i>
+            <i data-lucide="search"></i>
             <input type="text" class="sidebar-search-input" placeholder="Buscar consulta...">
         </div>
         <div class="global-search-results"></div>
@@ -77,7 +77,7 @@ $category_labels = [
 
                         <div class="sidebar-item-header">
                             <div class="sidebar-icon">
-                                <i class="ph <?php echo esc_attr(!empty($integration['icon']) ? $integration['icon'] : 'ph-magnifying-glass'); ?>"></i>
+                                <i data-lucide="<?php echo esc_attr(!empty($integration['icon']) ? $integration['icon'] : 'search'); ?>"></i>
                             </div>
                             <div class="sidebar-info">
                                 <span class="sidebar-item-title"><?php echo esc_html($integration['name']); ?></span>

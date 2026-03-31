@@ -42,7 +42,7 @@ function serc_get_dashboard_url($params = [])
         }
     }
 
-    return add_query_arg($params, $base_url);
+    return add_query_arg($params, rtrim($base_url, '/'));
 }
 
 add_action('wp_enqueue_scripts', 'serc_frontend_assets');
@@ -2804,7 +2804,7 @@ function serc_account_consultas_endpoint()
             $st = get_post_meta($pid, 'upload_status', true);
             $hash = serc_consulta_ensure_hash($pid);
             $url = admin_url('admin-ajax.php?action=serc_download&hash=' . $hash);
-            echo '<tr><td>' . esc_html(get_the_date('d/m/Y H:i')) . '</td><td>' . esc_html($t) . '</td><td>' . esc_html($st ?: 'n/a') . '</td><td><a class="action-btn" href="' . esc_url($url) . '"><i class="ph-bold ph-download-simple"></i> Download PDF</a></td></tr>';
+            echo '<tr><td>' . esc_html(get_the_date('d/m/Y H:i')) . '</td><td>' . esc_html($t) . '</td><td>' . esc_html($st ?: 'n/a') . '</td><td><a class="action-btn" href="' . esc_url($url) . '"><i data-lucide="download"></i> Download PDF</a></td></tr>';
         }
         wp_reset_postdata();
     } else {

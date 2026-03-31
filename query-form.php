@@ -66,7 +66,7 @@ if (!$is_ajax) {
             </div>
 
             <h1 class="query-title">
-                <i class="<?php echo esc_attr($integration['icon'] ?? 'ph-file-text'); ?>"></i>
+                <i data-lucide="<?php echo esc_attr($integration['icon'] ?? 'file-text'); ?>"></i>
                 <?php echo esc_html($integration['name']); ?>
             </h1>
 
@@ -85,13 +85,13 @@ if (!$is_ajax) {
                     </strong>
                 </div>
                 <div class="query-meta-item">
-                    <i class="ph ph-tag"></i>
+                    <i data-lucide="tag"></i>
                     Tipo: <strong>
                         <?php echo esc_html($integration['type']); ?>
                     </strong>
                 </div>
                 <button type="button" class="btn-view-model" id="btn-view-model">
-                    <i class="ph-bold ph-file-pdf"></i> Visualizar Modelo
+                    <i data-lucide="file-text"></i> Visualizar Modelo
                 </button>
             </div>
         </div>
@@ -126,7 +126,7 @@ if (!$is_ajax) {
                                     />
                             <?php endforeach; ?>
                             <button type="submit">
-                                <i class="ph-bold ph-magnifying-glass"></i> Consultar
+                                <i data-lucide="search"></i> Consultar
                             </button>
                             <div class="serc-result" style="margin-top:20px;"></div>
                     <?php endif; ?>
@@ -143,9 +143,9 @@ if (!$is_ajax) {
     <div class="pdf-modal-overlay" id="pdf-modal-overlay">
         <div class="pdf-modal">
             <div class="pdf-modal__header">
-                <h3><i class="ph-bold ph-file-pdf"></i> Modelo de Relatório</h3>
+                <h3><i data-lucide="file-text"></i> Modelo de Relatório</h3>
                 <button class="pdf-modal__close" id="pdf-modal-close">
-                    <i class="ph-bold ph-x"></i>
+                    <i data-lucide="x"></i>
                 </button>
             </div>
             <div class="pdf-modal__body">

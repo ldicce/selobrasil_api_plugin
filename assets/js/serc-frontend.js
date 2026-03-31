@@ -28,6 +28,36 @@ jQuery(function ($) {
     $ok.on('click', function () { $(document).off('keydown.sercModal'); close(); handleSubmit($form); });
   }
 
+  // ── User Avatar Dropdown ──────────────────────────────────────────────────
+  const $userBtn      = $('#serc-user-menu-btn');
+  const $userDropdown = $('#serc-user-dropdown');
+
+  $userBtn.on('click', function(e) {
+    e.stopPropagation();
+    const isOpen = $userDropdown.hasClass('is-open');
+    $userDropdown.toggleClass('is-open', !isOpen);
+    $userBtn.attr('aria-expanded', String(!isOpen));
+    // Re-render Lucide icons inside the freshly visible dropdown
+    if (!isOpen && typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  });
+
+  // Close on outside click
+  $(document).on('click.userMenu', function() {
+    $userDropdown.removeClass('is-open');
+    $userBtn.attr('aria-expanded', 'false');
+  });
+
+  // Close on Escape
+  $(document).on('keydown.userMenu', function(e) {
+    if (e.key === 'Escape') {
+      $userDropdown.removeClass('is-open');
+      $userBtn.attr('aria-expanded', 'false');
+    }
+  });
+  // ─────────────────────────────────────────────────────────────────────────
+
   function handleSubmit($form) {
     var type = $form.data('type');
     var payload = { action: 'serc_lookup', nonce: serc_ajax.nonce, type: type };
@@ -78,14 +108,14 @@ jQuery(function ($) {
         $result.html(msg + '<br>' + det);
         var dl = resp.data && resp.data.result && resp.data.result.download_url;
         if (dl) {
-          $result.append('<p><a class="action-btn" href="' + dl + '"><i class="ph-bold ph-download-simple"></i> Download PDF</a></p>');
+          $result.append('<p><a class="action-btn" href="' + dl + '"><i data-lucide="download"></i> Download PDF</a></p>');
         } else {
           var pdfB64 = (resp.data && resp.data.result && resp.data.result.pdfBase64) || (resp.data && resp.data.pdfBase64);
           if (pdfB64) {
             var url = base64ToBlobUrl(pdfB64);
             if (url) {
               console.log('[SERC] PDF blob URL created:', url);
-              $result.append('<p><a class="action-btn" href="' + url + '" download="consulta.pdf"><i class="ph-bold ph-download-simple"></i> Download PDF</a></p>');
+              $result.append('<p><a class="action-btn" href="' + url + '" download="consulta.pdf"><i data-lucide="download"></i> Download PDF</a></p>');
             }
           }
         }
@@ -360,7 +390,9 @@ jQuery(function ($) {
             action: 'serc_load_view',
             view: params.get('view') || 'dashboard',
             type: params.get('type') || '',
-            integration: params.get('integration') || ''
+            integration: params.get('integration') || '',
+            category: params.get('category') || '',
+            paged: params.get('paged') || 1
           },
           success: function (response) {
             console.log('[SERC Navigation] Response received:', response);
@@ -368,6 +400,11 @@ jQuery(function ($) {
             if (response.success && response.data && response.data.html) {
               // Replace content
               $('.area-content').html(response.data.html);
+              
+              // Re-initialize Lucide Icons for newly injected DOM elements
+              if (typeof serc_initLucide === 'function') {
+                  serc_initLucide();
+              }
 
               // Adjust grid layout based on view type
               if (response.data.view === 'category') {
@@ -745,7 +782,7 @@ jQuery(function ($) {
 
     integrations.forEach(function (item) {
       var $item = $('<div class="fav-selector-item" data-id="' + item.id + '">' +
-        '<i class="' + (item.icon || 'ph-puzzle-piece') + '"></i>' +
+        '<i data-lucide="' + (item.icon || 'puzzle') + '"></i>' +
         '<span>' + item.name + '</span>' +
         '</div>');
 
@@ -969,4 +1006,116 @@ jQuery(document).ready(function ($) {
       }
     });
   });
+
+  // ==========================================
+  // Sidebar Expand / Collapse Logic
+  // ==========================================
+  var $sidebar = $('.area-sidebar');
+  var $wrapper = $('.dashboard-wrapper');
+  var $closeBtn = $('.sidebar-close-btn');
+
+  // Load saved state (default is collapsed initially, but localStorage overrides)
+  var savedSidebarState = localStorage.getItem('serc_sidebar_collapsed');
+  var isSidebarCollapsed = true; // Default to collapsed as requested in Layout e Estilo
+  
+  if (savedSidebarState === 'false') {
+    isSidebarCollapsed = false;
+  } else if (savedSidebarState === 'true') {
+    isSidebarCollapsed = true;
+  }
+
+  if (isSidebarCollapsed) {
+    $sidebar.addClass('is-collapsed');
+    $wrapper.addClass('sidebar-collapsed');
+  } else {
+    $sidebar.removeClass('is-collapsed');
+    $wrapper.removeClass('sidebar-collapsed');
+  }
+
+  // Click on 'X' button to collapse
+  $closeBtn.on('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    $sidebar.addClass('is-collapsed');
+    $wrapper.addClass('sidebar-collapsed');
+    localStorage.setItem('serc_sidebar_collapsed', 'true');
+  });
+
+  // Click anywhere on the collapsed sidebar to expand it (like clicking tabs)
+  $sidebar.on('click', function(e) {
+    if ($sidebar.hasClass('is-collapsed')) {
+      if ($(e.target).closest('.serc-logout-link').length > 0) return;
+      
+      $sidebar.removeClass('is-collapsed');
+      $wrapper.removeClass('sidebar-collapsed');
+      localStorage.setItem('serc_sidebar_collapsed', 'false');
+    }
+  });
+
+  // Drag-to-scroll for metrics grid - Smooth incremental, safe click detection
+  let isDown = false;
+  let lastX;
+  let startClientX; // Track origin for total distance check
+  let hasDragged = false;
+  let activeGrid = null;
+
+  $(document).on('mousedown', '.dash-metrics-grid', function(e) {
+    if (e.button !== 0) return;
+    isDown = true;
+    hasDragged = false;
+    activeGrid = this;
+    lastX = e.clientX;
+    startClientX = e.clientX;
+    $(activeGrid).addClass('is-dragging');
+  });
+
+  // Remove is-dragging when mouse leaves or releases
+  $(document).on('mouseup mouseleave', '.dash-metrics-grid', function() {
+    if (isDown && activeGrid === this) {
+      $(activeGrid).removeClass('is-dragging');
+      isDown = false;
+      activeGrid = null;
+    }
+  });
+
+  // Also catch mouseup anywhere in doc (e.g. user releases outside carousel)
+  $(document).on('mouseup', function() {
+    if (activeGrid) {
+      $(activeGrid).removeClass('is-dragging');
+    }
+    isDown = false;
+    // Reset hasDragged after a tick so click handler runs first
+    setTimeout(() => { hasDragged = false; }, 50);
+    activeGrid = null;
+  });
+
+  $(document).on('mousemove', '.dash-metrics-grid', function(e) {
+    if (!isDown || activeGrid !== this) return;
+
+    e.preventDefault();
+
+    const dx = lastX - e.clientX;
+    lastX = e.clientX;
+
+    activeGrid.scrollLeft += dx;
+
+    // Only consider it a "drag" if total displacement from origin >= 8px
+    if (Math.abs(e.clientX - startClientX) >= 8) {
+      hasDragged = true;
+    }
+  });
+
+  // Block navigation only when user actually dragged (>= 8px total)
+  $(document).on('click', '.dash-metrics-grid a', function(e) {
+    if (hasDragged) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  });
+
+  // Prevent native browser ghost-image drag on links/images
+  $(document).on('dragstart', '.dash-metrics-grid a, .dash-metrics-grid img', function(e) {
+    e.preventDefault();
+  });
+
 });

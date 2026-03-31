@@ -4,70 +4,119 @@ if (!defined('ABSPATH'))
 
 // Helper to check active state (simple version)
 $current_page = $_GET['view'] ?? 'dashboard';
+
+// Get current user details for footer
+$current_user = wp_get_current_user();
+$user_name = $current_user->display_name ?: 'Usuário';
+$user_role = !empty($current_user->roles) ? translate_user_role($current_user->roles[0]) : 'Cliente';
+
+// User Initials for Avatar
+$words = explode(' ', $user_name);
+$initials = '';
+if (count($words) >= 2) {
+    $initials = mb_substr($words[0], 0, 1) . mb_substr($words[count($words)-1], 0, 1);
+} else {
+    $initials = mb_substr($user_name, 0, 2);
+}
+$initials = strtoupper($initials);
 ?>
 <!-- SIDEBAR -->
-<div class="area-sidebar">
+<aside class="area-sidebar is-collapsed">
+    
+    <!-- HEADER LOGO -->
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" class="logo-link" style="display:flex; align-items:center;">
+                <img src="<?php echo plugin_dir_url(__FILE__); ?>../assets/img/LOGO_branca.svg" alt="Selo Brasil" class="logo-full" style="max-height: 28px; width: auto;" />
+                <img src="<?php echo plugin_dir_url(__FILE__); ?>../assets/img/selobrasil_icon.svg" alt="Selo Brasil Icon" class="logo-collapsed" style="max-height: 28px; width: auto; display: none;" />
+            </a>
+        </div>
+        <button type="button" class="sidebar-close-btn" aria-label="Colapsar Menu">
+            <i data-lucide="x"></i>
+        </button>
+    </div>
+
+    <!-- NAVIGATION -->
     <ul class="nav-menu">
         <li class="nav-item">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>"
                 class="nav-link <?php echo $current_page === 'dashboard' ? 'active' : ''; ?>">
-                <i class="ph-fill ph-house"></i> Dashboard
+                <div class="nav-icon"><i data-lucide="layout-dashboard"></i></div>
+                <div class="nav-texts">
+                    <span class="nav-text">Dashboard</span>
+                    <span class="nav-desc">Visão geral do sistema</span>
+                </div>
+                <div class="nav-indicator"></div>
             </a>
         </li>
         <li class="nav-item">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'category']); ?>"
                 class="nav-link <?php echo $current_page === 'category' || $current_page === 'query' || $current_page === 'consulta' ? 'active' : ''; ?>">
-                <i class="ph-bold ph-magnifying-glass"></i> Consultas
+                <div class="nav-icon"><i data-lucide="search"></i></div>
+                <div class="nav-texts">
+                    <span class="nav-text">Consultas</span>
+                    <span class="nav-desc">Pesquisas detalhadas</span>
+                </div>
+                <div class="nav-indicator"></div>
             </a>
         </li>
         <li class="nav-item">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'history']); ?>"
                 class="nav-link <?php echo $current_page === 'history' ? 'active' : ''; ?>">
-                <i class="ph-duotone ph-clock-counter-clockwise"></i> Histórico
+                <div class="nav-icon"><i data-lucide="history"></i></div>
+                <div class="nav-texts">
+                    <span class="nav-text">Histórico</span>
+                    <span class="nav-desc">Consultas passadas</span>
+                </div>
+                <div class="nav-indicator"></div>
             </a>
         </li>
         <li class="nav-item">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'reports']); ?>"
                 class="nav-link <?php echo $current_page === 'reports' ? 'active' : ''; ?>">
-                <i class="ph-fill ph-chart-bar"></i> Relatórios
+                <div class="nav-icon"><i data-lucide="bar-chart-2"></i></div>
+                <div class="nav-texts">
+                    <span class="nav-text">Relatórios</span>
+                    <span class="nav-desc">Consumo de créditos</span>
+                </div>
+                <div class="nav-indicator"></div>
             </a>
         </li>
         <li class="nav-item">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'shop']); ?>"
                 class="nav-link <?php echo $current_page === 'shop' ? 'active' : ''; ?>">
-                <i class="ph-fill ph-storefront"></i> Loja
+                <div class="nav-icon"><i data-lucide="shopping-bag"></i></div>
+                <div class="nav-texts">
+                    <span class="nav-text">Loja</span>
+                    <span class="nav-desc">Adquirir saldos</span>
+                </div>
+                <div class="nav-indicator"></div>
             </a>
         </li>
         <li class="nav-item">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'orders']); ?>"
                 class="nav-link <?php echo $current_page === 'orders' ? 'active' : ''; ?>">
-                <i class="ph-fill ph-package"></i> Pedidos
+                <div class="nav-icon"><i data-lucide="package"></i></div>
+                <div class="nav-texts">
+                    <span class="nav-text">Pedidos</span>
+                    <span class="nav-desc">Faturas e pedidos</span>
+                </div>
+                <div class="nav-indicator"></div>
             </a>
         </li>
         <li class="nav-item">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'settings']); ?>"
                 class="nav-link <?php echo $current_page === 'settings' ? 'active' : ''; ?>">
-                <i class="ph-fill ph-gear"></i> Configuração
+                <div class="nav-icon"><i data-lucide="settings"></i></div>
+                <div class="nav-texts">
+                    <span class="nav-text">Configuração</span>
+                    <span class="nav-desc">Ajustes e perfil</span>
+                </div>
+                <div class="nav-indicator"></div>
             </a>
         </li>
     </ul>
 
-    <div class="sidebar-footer" style="margin-top: auto;">
-        <ul class="nav-menu">
-            <li class="nav-item">
-                <a href="<?php echo wp_logout_url(home_url()); ?>" class="nav-link serc-logout-link" style="color: #e74c3c;">
-                    <i class="ph-bold ph-sign-out"></i> Sair
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <div class="help-banner">
-        <div style="font-weight:bold;margin-bottom:5px;font-size:14px;">Precisar de ajuda?</div>
-        <small style="opacity:0.8;font-size:12px;">Consulte nossa página.</small>
-        <br>
-        <a href="#"
-            style="color:#2ECC40;font-size:12px;text-decoration:none;margin-top:10px;display:inline-block;border-bottom:1px solid #2ECC40;">Saiba
-            mais ↗</a>
-    </div>
-</div>
+    <!-- FOOTER (empty — user actions moved to header avatar dropdown) -->
+    <div class="sidebar-footer"></div>
+</aside>

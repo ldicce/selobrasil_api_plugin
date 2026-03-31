@@ -34,20 +34,20 @@ if (!$is_ajax) {
 
 <div class="account-container settings-container">
     <div class="account-header">
-        <h2><i class="ph-fill ph-gear"></i> Configuração</h2>
+        <h2><i data-lucide="settings"></i> Configuração</h2>
         <p class="account-description">Gerencie seus dados pessoais e preferências</p>
     </div>
 
     <!-- Settings Internal Tabs -->
     <div class="settings-tabs">
         <button class="settings-tab active" data-tab="account">
-            <i class="ph-bold ph-user-circle"></i> Detalhes da Conta
+            <i data-lucide="user-circle"></i> Detalhes da Conta
         </button>
         <button class="settings-tab" data-tab="address">
-            <i class="ph-bold ph-map-pin"></i> Endereço
+            <i data-lucide="map-pin"></i> Endereço
         </button>
         <button class="settings-tab" data-tab="wishlist">
-            <i class="ph-bold ph-heart"></i> Lista de Desejos
+            <i data-lucide="heart"></i> Lista de Desejos
         </button>
     </div>
 
@@ -96,7 +96,7 @@ if (!$is_ajax) {
 
             <div class="settings-form-actions">
                 <button type="submit" class="btn-settings-save">
-                    <i class="ph-bold ph-floppy-disk"></i> Salvar alterações
+                    <i data-lucide="save"></i> Salvar alterações
                 </button>
                 <span class="settings-save-status" id="account-save-status"></span>
             </div>
@@ -133,7 +133,7 @@ if (!$is_ajax) {
 
             <div class="settings-form-actions">
                 <button type="submit" class="btn-settings-save">
-                    <i class="ph-bold ph-floppy-disk"></i> Salvar endereço
+                    <i data-lucide="save"></i> Salvar endereço
                 </button>
                 <span class="settings-save-status" id="address-save-status"></span>
             </div>
@@ -152,11 +152,11 @@ if (!$is_ajax) {
         } else {
             ?>
             <div class="settings-empty-state">
-                <i class="ph-duotone ph-heart" style="font-size:48px; color:#ddd; margin-bottom:12px;"></i>
+                <i data-lucide="heart" style="width:48px;height:48px;color:#ddd;margin-bottom:12px;"></i>
                 <p>Sua lista de desejos está vazia.</p>
                 <small style="color:#999;">Navegue pela loja e adicione produtos à sua lista de desejos.</small>
                 <a href="<?php echo serc_get_dashboard_url(['view' => 'shop']); ?>" class="btn-shop-now" style="margin-top:16px;">
-                    <i class="ph-bold ph-storefront"></i> Ir para a Loja
+                    <i data-lucide="store"></i> Ir para a Loja
                 </a>
             </div>
             <?php

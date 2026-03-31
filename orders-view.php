@@ -32,7 +32,7 @@ if (!$is_ajax) {
 
 <div class="account-container orders-container">
     <div class="account-header">
-        <h2><i class="ph-fill ph-package"></i> Meus Pedidos</h2>
+        <h2><i data-lucide="package"></i> Meus Pedidos</h2>
         <p class="account-description">Acompanhe seus pedidos e histórico de compras</p>
     </div>
 
@@ -87,7 +87,7 @@ if (!$is_ajax) {
                             <td>R$ <?php echo number_format(floatval($order_total), 2, ',', '.'); ?></td>
                             <td>
                                 <a href="<?php echo esc_url($order->get_view_order_url()); ?>" class="btn-order-view" target="_blank">
-                                    <i class="ph-bold ph-eye"></i> Ver
+                                    <i data-lucide="eye"></i> Ver
                                 </a>
                             </td>
                         </tr>
@@ -96,10 +96,10 @@ if (!$is_ajax) {
             </table>
         <?php else: ?>
             <div class="orders-empty">
-                <i class="ph-duotone ph-package" style="font-size:48px; color:#ccc; margin-bottom:12px;"></i>
+                <i data-lucide="package" style="width:48px;height:48px;color:#ccc;margin-bottom:12px;"></i>
                 <p>Você ainda não possui pedidos.</p>
                 <a href="<?php echo serc_get_dashboard_url(['view' => 'shop']); ?>" class="btn-shop-now">
-                    <i class="ph-bold ph-storefront"></i> Ir para a Loja
+                    <i data-lucide="store"></i> Ir para a Loja
                 </a>
             </div>
         <?php endif; ?>
