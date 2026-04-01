@@ -78,7 +78,7 @@ if (!$is_ajax) {
                 </div>
             </div>
 
-            <h4 style="margin-top:24px; margin-bottom:12px; color:#555;">Alteração de Senha</h4>
+            <h4 class="settings-section-title">Alteração de Senha</h4>
             <div class="settings-form-grid">
                 <div class="form-group">
                     <label for="password_current">Senha atual (deixe em branco para manter)</label>
