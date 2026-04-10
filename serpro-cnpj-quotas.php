@@ -95,7 +95,7 @@ function serc_frontend_assets()
 {
     // jQuery Mask for CPF/CNPJ formatting
     wp_enqueue_script('jquery-mask', plugins_url('jQuery-Mask-Plugin-master/dist/jquery.mask.min.js', __FILE__), array('jquery'), '1.14.16', true);
-    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '3.3.4', true);
+    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '3.3.5', true);
 
     // External Assets (Google Fonts & Phosphor Icons)
     wp_enqueue_style('serc-google-fonts', 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap', array(), null);
@@ -702,6 +702,9 @@ function serc_render_dashboard_page()
         case 'orders':
             include plugin_dir_path(__FILE__) . 'orders-view.php';
             break;
+        case 'order-detail':
+            include plugin_dir_path(__FILE__) . 'order-detail-view.php';
+            break;
         case 'settings':
             include plugin_dir_path(__FILE__) . 'settings-view.php';
             break;
@@ -756,6 +759,10 @@ function serc_load_dashboard_view()
 
         case 'orders':
             include plugin_dir_path(__FILE__) . 'orders-view.php';
+            break;
+
+        case 'order-detail':
+            include plugin_dir_path(__FILE__) . 'order-detail-view.php';
             break;
 
         case 'settings':
@@ -1147,40 +1154,56 @@ function serc_get_credit_report_data()
     $total_queries = 0;
     $chart_buckets = [];
 
+    $consolidated = [];
     foreach ($activities as $activity) {
         $ts = $activity['timestamp'];
         if ($ts < $start || $ts > $end) continue;
 
         if ($activity['type'] === 'query' || $activity['type'] === 'debit') {
-            // Extract credit value from debit description (format: "Débito consulta xxx: -5.50")
-            $credit_value = 0;
-            if ($activity['type'] === 'debit' && preg_match('/-([0-9]+\.?[0-9]*)$/', $activity['description'], $matches)) {
-                $credit_value = floatval($matches[1]);
-                $total_credits += $credit_value;
+            
+            // Round timestamp to 5 seconds to group related debit and query
+            $group_key = round($ts / 5);
+            
+            if (!isset($consolidated[$group_key])) {
+                $consolidated[$group_key] = [
+                    'date' => date('d/m/Y', $ts),
+                    'time' => date('H:i', $ts),
+                    'type' => 'query',
+                    'description' => '',
+                    'status' => 'Concluída',
+                    'credit_value' => 0,
+                    'timestamp' => $ts
+                ];
             }
-            if ($activity['type'] === 'query') {
-                $total_queries++;
-            }
-
-            $activity_date = date('Y-m-d', $ts);
-            $filtered[] = [
-                'date' => date('d/m/Y', $ts),
-                'time' => date('H:i', $ts),
-                'type' => $activity['type'],
-                'description' => $activity['description'],
-                'credit_value' => $credit_value,
-                'timestamp' => $ts
-            ];
-
-            // Aggregate for chart
-            if ($activity['type'] === 'debit' && $credit_value > 0) {
-                if (!isset($chart_buckets[$activity_date])) {
-                    $chart_buckets[$activity_date] = 0;
+            
+            if ($activity['type'] === 'debit') {
+                if (preg_match('/-([0-9]+\.?[0-9]*)$/', $activity['description'], $matches)) {
+                    $credit_value = floatval($matches[1]);
+                    $consolidated[$group_key]['credit_value'] += $credit_value;
+                    $total_credits += $credit_value;
+                    
+                    // Chart
+                    $activity_date = date('Y-m-d', $ts);
+                    if (!isset($chart_buckets[$activity_date])) {
+                        $chart_buckets[$activity_date] = 0;
+                    }
+                    $chart_buckets[$activity_date] += $credit_value;
                 }
-                $chart_buckets[$activity_date] += $credit_value;
+            } else if ($activity['type'] === 'query') {
+                $total_queries++;
+                $consolidated[$group_key]['description'] = $activity['description'];
             }
         }
     }
+    
+    // Cleanup descriptions if a bucket only had a debit but no query
+    foreach ($consolidated as $k => $c) {
+        if (empty($c['description'])) {
+            $consolidated[$k]['description'] = 'Consulta realizada';
+        }
+    }
+
+    $filtered = array_values($consolidated);
 
     // Sort filtered activities by timestamp desc
     usort($filtered, function ($a, $b) {
@@ -1409,29 +1432,91 @@ global $serc_last_api_response;
 $serc_last_api_response = null;
 
 /**
- * Recursively search for pdfBase64 in a decoded JSON response.
+ * Humanize a JSON key into a readable label.
+ * Handles camelCase, snake_case, UPPER_CASE, and common abbreviations.
  */
-function serc_find_pdf_base64_recursive($data, $depth = 0)
+function serc_humanize_key($key)
 {
-    if ($depth > 5 || !is_array($data))
-        return null;
-    if (isset($data['pdfBase64']) && is_string($data['pdfBase64']) && strlen($data['pdfBase64']) > 100) {
-        return $data['pdfBase64'];
-    }
-    foreach ($data as $v) {
-        if (is_array($v)) {
-            $found = serc_find_pdf_base64_recursive($v, $depth + 1);
-            if ($found)
-                return $found;
+    // Known abbreviation mappings
+    static $known = array(
+        'cpf' => 'CPF', 'cnpj' => 'CNPJ', 'rg' => 'RG', 'uf' => 'UF', 'cep' => 'CEP',
+        'rfb' => 'RFB', 'cnh' => 'CNH', 'pis' => 'PIS', 'ctps' => 'CTPS', 'rne' => 'RNE',
+        'ddd' => 'DDD', 'crlv' => 'CRLV', 'renavam' => 'RENAVAM', 'chassi' => 'Chassi',
+        'fipe' => 'FIPE', 'ipva' => 'IPVA', 'dpvat' => 'DPVAT', 'spc' => 'SPC',
+        'bacen' => 'BACEN', 'scpc' => 'SCPC', 'cndt' => 'CNDT', 'mei' => 'MEI',
+        'ie' => 'IE', 'im' => 'IM', 'id' => 'ID', 'url' => 'URL', 'bin' => 'BIN',
+        'renainf' => 'RENAINF', 'renajud' => 'RENAJUD', 'quod' => 'QUOD',
+        'obito' => 'Óbito', 'situacao' => 'Situação', 'restricao' => 'Restrição',
+        'restricoes' => 'Restrições', 'endereco' => 'Endereço', 'enderecos' => 'Endereços',
+        'telefone' => 'Telefone', 'telefones' => 'Telefones', 'numero' => 'Número',
+        'codigo' => 'Código', 'descricao' => 'Descrição', 'municipio' => 'Município',
+        'nascimento' => 'Nascimento', 'obrigacao' => 'Obrigação', 'divida' => 'Dívida',
+        'dividas' => 'Dívidas', 'historico' => 'Histórico', 'veiculo' => 'Veículo',
+        'veiculos' => 'Veículos', 'proprietario' => 'Proprietário', 'informacao' => 'Informação',
+        'informacoes' => 'Informações', 'juridico' => 'Jurídico', 'processo' => 'Processo',
+        'processos' => 'Processos', 'protesto' => 'Protesto', 'protestos' => 'Protestos',
+    );
+
+    // Split camelCase: dataNascimento → data Nascimento
+    $key = preg_replace('/([a-z])([A-Z])/', '$1 $2', $key);
+    // Replace underscores and hyphens with spaces
+    $key = str_replace(array('_', '-'), ' ', $key);
+    // Split into words
+    $words = preg_split('/\s+/', trim($key));
+    $result = array();
+    foreach ($words as $word) {
+        $lower = mb_strtolower($word, 'UTF-8');
+        if (isset($known[$lower])) {
+            $result[] = $known[$lower];
+        } else {
+            $result[] = mb_strtoupper(mb_substr($word, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($lower, 1, null, 'UTF-8');
         }
     }
-    return null;
+    return implode(' ', $result);
 }
 
+/**
+ * Format a value for display in a PDF report.
+ * Auto-detects CPF, CNPJ, dates, booleans, etc.
+ */
+function serc_format_value($value, $key = '')
+{
+    if ($value === null || $value === '')
+        return '-';
+    if (is_bool($value))
+        return $value ? 'Sim' : 'Não';
+    $str = strval($value);
+    if ($str === 'true') return 'Sim';
+    if ($str === 'false') return 'Não';
+
+    // CPF mask: 11 digits
+    $key_lower = strtolower($key);
+    $digits = preg_replace('/\D/', '', $str);
+    if (strlen($digits) === 11 && (strpos($key_lower, 'cpf') !== false || strpos($key_lower, 'documento') !== false)) {
+        return substr($digits, 0, 3) . '.' . substr($digits, 3, 3) . '.' . substr($digits, 6, 3) . '-' . substr($digits, 9, 2);
+    }
+    // CNPJ mask: 14 digits
+    if (strlen($digits) === 14 && (strpos($key_lower, 'cnpj') !== false || strpos($key_lower, 'documento') !== false)) {
+        return substr($digits, 0, 2) . '.' . substr($digits, 2, 3) . '.' . substr($digits, 5, 3) . '/' . substr($digits, 8, 4) . '-' . substr($digits, 12, 2);
+    }
+    // Date detection: YYYY-MM-DD or YYYYMMDD
+    if (preg_match('/^\d{4}-\d{2}-\d{2}/', $str)) {
+        $ts = strtotime($str);
+        if ($ts) return date('d/m/Y', $ts);
+    }
+    if (preg_match('/^\d{8}$/', $str) && (strpos($key_lower, 'data') !== false || strpos($key_lower, 'date') !== false || strpos($key_lower, 'nascimento') !== false)) {
+        return substr($str, 6, 2) . '/' . substr($str, 4, 2) . '/' . substr($str, 0, 4);
+    }
+    return htmlspecialchars($str);
+}
+
+/**
+ * Post API call: extract JSON response (no longer depends on aux/pdfBase64 from API).
+ * PDF generation is handled separately by serc_generate_pdf_from_data.
+ */
 function serc_apifull_post_extract_pdf_base64($endpoint, $payload, $log_prefix)
 {
     global $serc_last_api_response;
-    $pdf_base64 = null;
     $serc_last_api_response = null;
     $token = get_option('serc_apifull_token', '');
     if (empty($token)) {
@@ -1460,7 +1545,6 @@ function serc_apifull_post_extract_pdf_base64($endpoint, $payload, $log_prefix)
     $body = wp_remote_retrieve_body($req);
     if ($code < 200 || $code >= 300) {
         error_log($log_prefix . ' ERROR: API returned non-success HTTP code=' . $code);
-        // Try to decode body to get error message
         $err_decoded = json_decode($body, true);
         $err_msg = 'api_error';
         if (is_array($err_decoded) && !empty($err_decoded['message'])) {
@@ -1476,15 +1560,14 @@ function serc_apifull_post_extract_pdf_base64($endpoint, $payload, $log_prefix)
         return array('success' => false, 'pdf_base64' => null, 'error' => 'api_error_invalid_json', 'http_code' => $code);
     }
     $serc_last_api_response = $decoded;
-    $pdf_base64 = serc_find_pdf_base64_recursive($decoded);
-    if (!$pdf_base64) {
-        error_log($log_prefix . ' WARNING: no pdfBase64 found in response. Keys: ' . implode(',', array_keys($decoded)));
-    }
-    return array('success' => true, 'pdf_base64' => $pdf_base64, 'error' => null, 'http_code' => $code);
+    // PDF will be generated from the JSON data by serc_generate_pdf_from_data
+    // No longer relying on aux/pdfBase64 from the API response
+    return array('success' => true, 'pdf_base64' => null, 'error' => null, 'http_code' => $code);
 }
 
 /**
- * Generate a PDF from API JSON data using pure PHP.
+ * Generate a professional PDF from API JSON data.
+ * Works generically with any JSON structure — no manual field mapping needed.
  * Returns base64-encoded PDF string or null on failure.
  */
 function serc_generate_pdf_from_data($type, $data)
@@ -1493,108 +1576,134 @@ function serc_generate_pdf_from_data($type, $data)
         return null;
 
     $type_labels = array(
-        'cnpj' => 'CNPJ Básico',
-        'cpf' => 'CPF Básico',
-        'cpf_renda' => 'CPF com Renda',
-        'ic_nome' => 'Busca por Nome',
-        'ic_telefone' => 'Busca por Telefone',
-        'ic_placa' => 'Consulta por Placa',
-        'ic_cnh' => 'CNH',
-        'crlv' => 'CRLV',
-        'proprietario_placa' => 'Proprietário por Placa',
-        'gravame' => 'Gravame',
-        'renainf' => 'RENAINF',
-        'serasa_premium' => 'Serasa Premium',
-        'ic_basico_score' => 'IC Básico Score',
-        'scpc_boa_vista' => 'SCPC Boa Vista',
-        'bacen' => 'BACEN',
-        'quod' => 'QUOD',
-        'dossie_juridico' => 'Dossiê Jurídico',
+        'cnpj' => 'Consulta CNPJ', 'cpf' => 'Consulta CPF',
+        'cpf_renda' => 'CPF com Renda', 'cpf_ultra_completo' => 'CPF Ultra Completo',
+        'ic_nome' => 'Busca por Nome', 'ic_telefone' => 'Busca por Telefone',
+        'ic_placa' => 'Consulta por Placa', 'ic_cnh' => 'Consulta CNH',
+        'crlv' => 'Consulta CRLV', 'proprietario_placa' => 'Proprietário por Placa',
+        'gravame' => 'Consulta Gravame', 'renainf' => 'Consulta RENAINF',
+        'serasa_premium' => 'Serasa Premium', 'ic_basico_score' => 'IC Básico Score',
+        'scpc_boa_vista' => 'SCPC Boa Vista', 'bacen' => 'Consulta BACEN',
+        'quod' => 'Consulta QUOD', 'dossie_juridico' => 'Dossiê Jurídico',
         'dossie_juridico_cpf' => 'Dossiê Jurídico CPF',
         'certidao_nacional_debitos_trabalhistas' => 'CNDT',
-        'spc_brasil_cenprot' => 'SPC Brasil Cenprot',
-        'spc_brasil_serasa' => 'SPC Brasil Serasa',
-        'scpc_bv_plus_v2' => 'SCPC BV Plus V2',
-        'srs_premium' => 'SRS Premium',
-        'agregados_basica_propria' => 'Agregados',
-        'bin_estadual' => 'BIN Estadual',
-        'bin_nacional' => 'BIN Nacional',
-        'foto_leilao' => 'Foto Leilão',
-        'leilao' => 'Leilão',
+        'spc_brasil_cenprot' => 'SPC Brasil Cenprot', 'spc_brasil_serasa' => 'SPC Brasil Serasa',
+        'scpc_bv_plus_v2' => 'SCPC BV Plus V2', 'srs_premium' => 'SRS Premium',
+        'agregados_basica_propria' => 'Agregados Básica Própria',
+        'bin_estadual' => 'BIN Estadual', 'bin_nacional' => 'BIN Nacional',
+        'foto_leilao' => 'Foto Leilão', 'leilao' => 'Consulta Leilão',
         'leilao_score_perda_total' => 'Score Perda Total',
         'historico_roubo_furto' => 'Histórico Roubo/Furto',
         'indice_risco_veicular' => 'Índice Risco Veicular',
         'licenciamento_anterior' => 'Licenciamento Anterior',
         'ic_proprietario_atual' => 'Proprietário Atual',
-        'laudo_veicular' => 'Laudo Veicular',
-        'recall' => 'Recall',
-        'gravame_detalhamento' => 'Gravame Detalhamento',
-        'renajud' => 'RENAJUD',
-        'renainf_placa' => 'RENAINF por Placa',
-        'sinistro' => 'Sinistro',
-        'fipe' => 'FIPE',
-        'dividas_bancrias_cpf' => 'Dívidas Bancárias CPF',
+        'laudo_veicular' => 'Laudo Veicular', 'recall' => 'Consulta Recall',
+        'gravame_detalhamento' => 'Gravame Detalhamento', 'renajud' => 'Consulta RENAJUD',
+        'renainf_placa' => 'RENAINF por Placa', 'sinistro' => 'Consulta Sinistro',
+        'fipe' => 'Consulta FIPE', 'dividas_bancrias_cpf' => 'Dívidas Bancárias CPF',
         'cadastrais_score_dividas' => 'Cadastrais Score Dívidas',
         'cadastrais_score_dividas_cp' => 'Cadastrais Score Dívidas CP',
-        'scr_bacen_score' => 'SCR BACEN Score',
+        'cndt' => 'CNDT', 'scr_bacen_score' => 'SCR BACEN Score',
         'protesto_nacional_cenprot' => 'Protesto Nacional',
         'r_acoes_e_processos_judiciais' => 'Ações e Processos Judiciais',
     );
-    $title = isset($type_labels[$type]) ? $type_labels[$type] : strtoupper(str_replace('_', ' ', $type));
+    $title = isset($type_labels[$type]) ? $type_labels[$type] : serc_humanize_key($type);
     $date = date('d/m/Y H:i:s');
 
-    // Filter out pdfBase64 and very long values from the display data
+    // Filter display data
     $display_data = serc_filter_display_data($data);
 
-    // Build HTML
+    // Build professional HTML optimized for Dompdf
     $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
     $html .= '<style>';
-    $html .= 'body{font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#333;margin:30px;}';
-    $html .= 'h1{font-size:18px;color:#1a5276;border-bottom:2px solid #1a5276;padding-bottom:8px;margin-bottom:5px;}';
-    $html .= '.meta{font-size:10px;color:#777;margin-bottom:20px;}';
-    $html .= 'table{width:100%;border-collapse:collapse;margin-bottom:15px;}';
-    $html .= 'th,td{text-align:left;padding:6px 10px;border:1px solid #ddd;word-wrap:break-word;}';
-    $html .= 'th{background:#f0f4f7;font-weight:600;width:35%;color:#1a5276;}';
-    $html .= 'td{background:#fff;}';
-    $html .= 'tr:nth-child(even) td{background:#f9f9f9;}';
-    $html .= '.section-title{font-size:13px;font-weight:600;color:#1a5276;margin:15px 0 8px 0;padding:5px 0;border-bottom:1px solid #eee;}';
-    $html .= '.footer{margin-top:30px;text-align:center;font-size:9px;color:#aaa;border-top:1px solid #eee;padding-top:10px;}';
+    // Dompdf-compatible CSS (no nth-child, no flexbox, no grid)
+    $html .= '@page { margin: 30px 25px 40px 25px; }';
+    $html .= 'body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #1e293b; margin: 0; padding: 0; }';
+    // Header bar
+    $html .= '.report-header { background-color: #1e293b; color: #ffffff; padding: 18px 25px 14px 25px; margin: -30px -25px 0 -25px; }';
+    $html .= '.report-header h1 { margin: 0 0 4px 0; font-size: 17px; font-weight: bold; color: #ffffff; letter-spacing: 0.3px; }';
+    $html .= '.report-header .report-sub { font-size: 8.5px; color: #94a3b8; }';
+    // Content area
+    $html .= '.report-content { padding: 15px 0 0 0; }';
+    // Data tables
+    $html .= 'table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }';
+    $html .= 'table td, table th { text-align: left; padding: 6px 10px; font-size: 9.5px; vertical-align: top; border-bottom: 1px solid #e2e8f0; }';
+    $html .= 'table th { background-color: #f1f5f9; font-weight: bold; width: 35%; color: #334155; border-right: 1px solid #e2e8f0; }';
+    $html .= 'table td { background-color: #ffffff; color: #0f172a; }';
+    // Alternate row styling applied via inline styles in render function
+    $html .= '.row-even td { background-color: #f8fafc; }';
+    // Section headers
+    $html .= '.section-title { font-size: 11px; font-weight: bold; color: #0f172a; margin: 18px 0 6px 0; padding: 5px 10px; background-color: #f1f5f9; border-left: 3px solid #3b82f6; }';
+    $html .= '.section-divider { border: none; border-top: 1px solid #e2e8f0; margin: 12px 0; }';
+    // Footer
+    $html .= '.report-footer { margin-top: 25px; text-align: center; font-size: 7.5px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; }';
+    // Value badges
+    $html .= '.val-positive { color: #059669; font-weight: bold; }';
+    $html .= '.val-negative { color: #dc2626; font-weight: bold; }';
     $html .= '</style></head><body>';
-    $html .= '<h1>' . htmlspecialchars($title) . '</h1>';
-    $html .= '<div class="meta">Gerado em: ' . $date . ' | Selo Brasil Consultas</div>';
+    
+    // Encode logo to base64 for reliable Dompdf loading
+    $logo_path = __DIR__ . '/assets/img/LOGO_branca.svg';
+    $logo_img = '';
+    if (file_exists($logo_path)) {
+        $logo_data = base64_encode(file_get_contents($logo_path));
+        $logo_img = 'data:image/svg+xml;base64,' . $logo_data;
+    }
+    
+    // Header Layout (Logo on left, details on right)
+    $html .= '<div class="report-header">';
+    $html .= '<table style="width:100%; border:none; margin:0; padding:0; margin-bottom:0;">';
+    $html .= '<tr>';
+    $html .= '<td style="border:none; padding:0; background:transparent; vertical-align:middle; width:160px;">';
+    if ($logo_img) {
+        $html .= '<img src="' . $logo_img . '" style="width: 140px; height: auto;" />';
+    }
+    $html .= '</td>';
+    $html .= '<td style="border:none; padding:0; background:transparent; vertical-align:middle; text-align:right;">';
+    $html .= '<h1 style="color:#ffffff">' . htmlspecialchars($title) . '</h1>';
+    $html .= '<span class="report-sub">Selo Brasil Consultas &bull; ' . $date . '</span>';
+    $html .= '</td>';
+    $html .= '</tr>';
+    $html .= '</table>';
+    $html .= '</div>';
+    
+    // Content
+    $html .= '<div class="report-content">';
     $html .= serc_render_data_to_html($display_data);
-    $html .= '<div class="footer">Este documento foi gerado automaticamente pelo sistema Selo Brasil Consultas.</div>';
+    $html .= '</div>';
+    // Footer
+    $html .= '<div class="report-footer">Documento gerado automaticamente pelo sistema Selo Brasil Consultas &mdash; Uso interno e confidencial</div>';
     $html .= '</body></html>';
 
-    // Try to use Dompdf if available, otherwise use HTML-to-PDF via wp_upload
-    // Fallback: store HTML as a data URI PDF (browser-renderable)
     $pdf_binary = serc_html_to_pdf_binary($html);
     if ($pdf_binary) {
         return base64_encode($pdf_binary);
     }
-
-    // Ultimate fallback: return HTML as base64 (will be served as HTML, not PDF)
-    // This ensures there's always something to download
-    error_log('SERPRO Consultas: PDF generation fallback - using HTML wrapper');
-    return base64_encode($html);
+    error_log('SERPRO Consultas: PDF generation failed for type=' . $type);
+    return null;
 }
 
 /**
- * Filter out pdfBase64 and internal fields from display data.
+ * Filter out internal/binary fields from API response data for display.
  */
 function serc_filter_display_data($data, $depth = 0)
 {
     if ($depth > 10 || !is_array($data))
         return $data;
     $filtered = array();
-    $skip_keys = array('pdfBase64', 'pdf_base64', 'link', 'hash', 'token');
+    $skip_keys = array('pdfBase64', 'pdf_base64', 'link', 'hash', 'token', 'aux', 'assinatura', 'signature');
     foreach ($data as $key => $value) {
         if (in_array($key, $skip_keys, true))
             continue;
-        if (is_string($value) && strlen($value) > 5000)
-            continue; // Skip huge base64 blobs
+        // Skip any string that looks like base64 blob (>1000 chars, no spaces)
+        if (is_string($value) && strlen($value) > 1000 && !preg_match('/\s/', $value))
+            continue;
         if (is_array($value)) {
-            $filtered[$key] = serc_filter_display_data($value, $depth + 1);
+            $child = serc_filter_display_data($value, $depth + 1);
+            // Skip empty arrays/objects after filtering
+            if (!empty($child)) {
+                $filtered[$key] = $child;
+            }
         } else {
             $filtered[$key] = $value;
         }
@@ -1603,41 +1712,62 @@ function serc_filter_display_data($data, $depth = 0)
 }
 
 /**
- * Render nested data array as HTML tables.
+ * Render nested data array as professional HTML tables for PDF generation.
+ * Auto-detects structure: key-value pairs → table, arrays → sections/lists.
  */
-function serc_render_data_to_html($data, $depth = 0)
+function serc_render_data_to_html($data, $depth = 0, $parent_key = '')
 {
     if (!is_array($data) || empty($data))
-        return '<p><em>Sem dados disponíveis</em></p>';
+        return '<p style="color:#95a5a6;font-style:italic;">Sem dados disponíveis</p>';
     if ($depth > 8)
         return '<p>...</p>';
 
-    // Check if this is a list of items (numeric keys)
+    // Check if this is a sequential list (numeric keys)
     $is_list = array_keys($data) === range(0, count($data) - 1);
 
     $html = '';
     if ($is_list) {
         foreach ($data as $i => $item) {
             if (is_array($item)) {
-                $html .= '<div class="section-title">Item ' . ($i + 1) . '</div>';
-                $html .= serc_render_data_to_html($item, $depth + 1);
+                $item_label = $parent_key ? serc_humanize_key($parent_key) . ' ' . ($i + 1) : 'Item ' . ($i + 1);
+                $html .= '<div class="section-title">' . htmlspecialchars($item_label) . '</div>';
+                $html .= serc_render_data_to_html($item, $depth + 1, $parent_key);
             } else {
-                $html .= '<p>' . htmlspecialchars(strval($item)) . '</p>';
+                $html .= '<p>&bull; ' . serc_format_value($item) . '</p>';
             }
         }
     } else {
-        $html .= '<table>';
+        // Separate simple key-value pairs from nested objects/arrays
+        $simple = array();
+        $nested = array();
         foreach ($data as $key => $value) {
-            $label = ucfirst(str_replace(array('_', '-'), ' ', $key));
             if (is_array($value)) {
-                $html .= '<tr><th colspan="2" style="background:#e8eef3;">' . htmlspecialchars($label) . '</th></tr>';
-                $html .= '<tr><td colspan="2">' . serc_render_data_to_html($value, $depth + 1) . '</td></tr>';
+                $nested[$key] = $value;
             } else {
-                $display = ($value === null) ? '-' : htmlspecialchars(strval($value));
-                $html .= '<tr><th>' . htmlspecialchars($label) . '</th><td>' . $display . '</td></tr>';
+                $simple[$key] = $value;
             }
         }
-        $html .= '</table>';
+
+        // Render simple values as a table with zebra-striping
+        if (!empty($simple)) {
+            $html .= '<table>';
+            $row_idx = 0;
+            foreach ($simple as $key => $value) {
+                $label = serc_humanize_key($key);
+                $display = serc_format_value($value, $key);
+                $row_class = ($row_idx % 2 === 1) ? ' class="row-even"' : '';
+                $html .= '<tr' . $row_class . '><th>' . htmlspecialchars($label) . '</th><td>' . $display . '</td></tr>';
+                $row_idx++;
+            }
+            $html .= '</table>';
+        }
+
+        // Render nested objects as titled sections
+        foreach ($nested as $key => $value) {
+            $label = serc_humanize_key($key);
+            $html .= '<div class="section-title">' . htmlspecialchars($label) . '</div>';
+            $html .= serc_render_data_to_html($value, $depth + 1, $key);
+        }
     }
     return $html;
 }
@@ -1737,12 +1867,13 @@ function serc_minimal_pdf_from_html($html)
     // Create page and stream objects
     for ($p = 0; $p < $page_count; $p++) {
         $page_lines = $pages_lines[$p];
-        // Build content stream
+        // Build content stream using absolute text positioning
         $stream = "BT\n/F1 10 Tf\n";
         $y = 780;
         foreach ($page_lines as $line) {
             $escaped = str_replace(array('\\', '(', ')'), array('\\\\', '\\(', '\\)'), $line);
-            $stream .= "40 {$y} Td\n({$escaped}) Tj\n0 0 Td\n";
+            // Use absolute coordinates for each line of text
+            $stream .= "1 0 0 1 40 {$y} Tm\n({$escaped}) Tj\n";
             $y -= 13;
             if ($y < 40)
                 break;
@@ -2461,6 +2592,14 @@ function serc_lookup()
     $http_code = $api_result['http_code'] ?? 500;
     if (empty($api_result['success'])) {
         $msg = $api_result['error'] ?? 'api_error';
+        // Map known API provider errors to user-friendly messages
+        $msg_lower = strtolower(trim($msg));
+        if (strpos($msg_lower, 'sem saldo') !== false || strpos($msg_lower, 'saldo insuficiente') !== false) {
+            $msg = 'Este serviço está temporariamente indisponível. Tente novamente mais tarde ou entre em contato com o suporte.';
+            error_log('SERPRO Consultas: API Full sem saldo para type=' . $type . ' — créditos do provedor esgotados');
+        } elseif (strpos($msg_lower, 'unauthorized') !== false || strpos($msg_lower, 'token') !== false) {
+            $msg = 'Erro de autenticação com o provedor. Entre em contato com o suporte.';
+        }
         wp_send_json_error(array('message' => $msg, 'code' => $http_code), $http_code >= 200 ? $http_code : 500);
     }
 
@@ -2474,7 +2613,8 @@ function serc_lookup()
     }
 
     // Save Consultant Data & PDF
-    $pdf_base64 = $api_result['pdf_base64'] ?? null;
+    // Always generate PDF from JSON data (no longer depends on API-provided PDF)
+    $pdf_base64 = null;
     $filename = 'consulta-' . $type . '-' . time() . '.pdf';
     $download_url = '';
     $upload_status = 'pending';
@@ -2491,9 +2631,8 @@ function serc_lookup()
         update_post_meta($consulta_id, 'type', $type);
         update_post_meta($consulta_id, 'filename', $filename);
 
-        // If API didn't return a PDF, generate one from the JSON data
-        if (!$pdf_base64 && !empty($serc_last_api_response)) {
-            error_log('SERPRO Consultas: consulta ' . $consulta_id . ' no API PDF for type=' . $type . ', generating from data...');
+        // Generate PDF from JSON data
+        if (!empty($serc_last_api_response)) {
             $pdf_base64 = serc_generate_pdf_from_data($type, $serc_last_api_response);
             if ($pdf_base64) {
                 error_log('SERPRO Consultas: consulta ' . $consulta_id . ' PDF generated from JSON data successfully');
@@ -2613,6 +2752,14 @@ function serc_handle_order_completed($order_id_or_obj)
     $order = is_object($order_id_or_obj) ? $order_id_or_obj : wc_get_order($order_id_or_obj);
     if (!$order)
         return;
+
+    // Guard: prevent double credit addition (both woocommerce_new_order and
+    // woocommerce_order_status_completed can fire for the same order)
+    if ($order->get_meta('_serc_credits_applied')) {
+        error_log("SERPRO Consultas: Pedido #{$order->get_id()} créditos já aplicados — ignorando duplicata.");
+        return;
+    }
+
     $user_id = $order->get_user_id();
     if (!$user_id)
         return;
@@ -2643,6 +2790,11 @@ function serc_handle_order_completed($order_id_or_obj)
         $current_balance = floatval(get_user_meta($user_id, 'serc_credit_balance', true));
         $new_balance = round($current_balance + $total_add, 2);
         update_user_meta($user_id, 'serc_credit_balance', $new_balance);
+
+        // Mark order as processed to prevent duplicate credit additions
+        $order->update_meta_data('_serc_credits_applied', time());
+        $order->save();
+
         error_log("SERPRO Consultas: Pedido #{$order->get_id()} adicionou +{$total_add} créditos ao usuário {$user_id}. Saldo: {$new_balance}.");
     }
 }
@@ -2862,7 +3014,19 @@ function serc_secure_download()
     $auth = (stripos($token, 'Bearer ') === 0) ? $token : ('Bearer ' . $token);
     $content = null;
     if ($pdfb64) {
-        $content = base64_decode(preg_replace('/^data:.*;base64,/', '', $pdfb64));
+        // Clean up the base64 string: remove data URI prefix, whitespace, and fix padding
+        $clean_b64 = preg_replace('/^data:.*;base64,/', '', $pdfb64);
+        $clean_b64 = preg_replace('/\s+/', '', $clean_b64);
+        // Fix padding if missing
+        $pad = strlen($clean_b64) % 4;
+        if ($pad > 0) {
+            $clean_b64 .= str_repeat('=', 4 - $pad);
+        }
+        $content = base64_decode($clean_b64, true);
+        // If strict decode failed, try non-strict as fallback
+        if ($content === false) {
+            $content = base64_decode($clean_b64);
+        }
     }
     if (!$content) {
         // Try storage fetch
@@ -2909,10 +3073,39 @@ function serc_secure_download()
     $type = get_post_meta($pid, 'type', true);
     serc_log_activity($uid, 'download', 'Download relatório ' . $type);
 
-    error_log('SERPRO Consultas: download id=' . $pid . ' user=' . $uid . ' filename=' . $filename);
+    // Validate that content is actually a PDF (starts with %PDF)
+    if (substr($content, 0, 4) !== '%PDF') {
+        error_log('SERPRO Consultas: download content is NOT a valid PDF (first bytes: ' . bin2hex(substr($content, 0, 16)) . ') pid=' . $pid);
+        // Try to re-generate from stored API response
+        $api_response_json = get_post_meta($pid, 'api_response', true);
+        if ($api_response_json) {
+            $api_data = json_decode($api_response_json, true);
+            if (is_array($api_data) && !empty($api_data)) {
+                $gen_b64 = serc_generate_pdf_from_data($type ?: 'consulta', $api_data);
+                if ($gen_b64) {
+                    $regen = base64_decode($gen_b64);
+                    if ($regen && substr($regen, 0, 4) === '%PDF') {
+                        $content = $regen;
+                        update_post_meta($pid, 'pdf_base64', $gen_b64);
+                        error_log('SERPRO Consultas: download re-generated valid PDF pid=' . $pid);
+                    }
+                }
+            }
+        }
+    }
+
+    error_log('SERPRO Consultas: download id=' . $pid . ' user=' . $uid . ' filename=' . $filename . ' size=' . strlen($content));
+
+    // Clean any output buffers to prevent corruption
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Cache-Control: no-store');
+    header('Content-Length: ' . strlen($content));
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    header('Pragma: no-cache');
     echo $content;
     exit;
 }
@@ -3053,6 +3246,112 @@ function serc_upload()
     $url = admin_url('admin-ajax.php?action=serc_download&hash=' . $hash);
     wp_send_json_success(array('download_url' => $url, 'filename' => $filename, 'storage_id' => ($up['id'] ?? null)));
 }
+
+add_action('wp_ajax_serc_mock_pdf_model', 'serc_mock_pdf_model');
+add_action('wp_ajax_nopriv_serc_mock_pdf_model', 'serc_mock_pdf_model');
+
+function serc_mock_pdf_model() {
+    require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
+    require_once plugin_dir_path(__FILE__) . 'includes/integrations-config.php';
+
+    $integration_id = sanitize_text_field($_GET['integration'] ?? '');
+    $integration = serc_get_integration_by_id($integration_id);
+    
+    if (!$integration) {
+        wp_die('Integração não encontrada.');
+    }
+
+    $logo_path = plugin_dir_path(__FILE__) . 'assets/img/LOGO_branca.svg';
+    $logo_img = '';
+    if (file_exists($logo_path)) {
+        $logo_data = base64_encode(file_get_contents($logo_path));
+        $logo_img = 'data:image/svg+xml;base64,' . $logo_data;
+    }
+
+    $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+    $html .= '<style>';
+    $html .= '@page { margin: 30px 25px 40px 25px; }';
+    $html .= 'body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #1e293b; margin: 0; padding: 0; }';
+    $html .= '.report-header { background-color: #1e293b; color: #ffffff; padding: 18px 25px 14px 25px; margin: -30px -25px 0 -25px; }';
+    $html .= '.report-header h1 { margin: 0 0 4px 0; font-size: 17px; font-weight: bold; color: #ffffff; }';
+    $html .= '.report-header .report-sub { font-size: 8.5px; color: #94a3b8; }';
+    $html .= '.report-content { padding: 15px 0 0 0; }';
+    $html .= 'table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }';
+    $html .= 'table td, table th { text-align: left; padding: 6px 10px; font-size: 9.5px; vertical-align: top; border-bottom: 1px solid #e2e8f0; }';
+    $html .= 'table th { background-color: #f1f5f9; font-weight: bold; width: 35%; color: #334155; border-right: 1px solid #e2e8f0; }';
+    $html .= 'table td { background-color: #ffffff; color: #0f172a; }';
+    $html .= '.row-even td { background-color: #f8fafc; }';
+    $html .= '.section-title { font-size: 11px; font-weight: bold; color: #0f172a; margin: 18px 0 6px 0; padding: 5px 10px; background-color: #f1f5f9; border-left: 3px solid #3b82f6; }';
+    $html .= '.report-footer { margin-top: 25px; text-align: center; font-size: 7.5px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; }';
+    $html .= '</style></head><body>';
+
+    $html .= '<div class="report-header">';
+    $html .= '<table style="width:100%; border:none; margin:0; padding:0; margin-bottom:0;">';
+    $html .= '<tr>';
+    $html .= '<td style="border:none; padding:0; background:transparent; vertical-align:middle; width:160px;">';
+    if ($logo_img) {
+        $html .= '<img src="' . $logo_img . '" style="width: 140px; height: auto;" />';
+    }
+    $html .= '</td>';
+    $html .= '<td style="border:none; padding:0; background:transparent; vertical-align:middle; text-align:right;">';
+    $html .= '<h1 style="color:#ffffff">' . esc_html($integration['name']) . '</h1>';
+    $html .= '<span class="report-sub">Selo Brasil Consultas &bull; Modelo de Demonstração</span>';
+    $html .= '</td>';
+    $html .= '</tr>';
+    $html .= '</table>';
+    $html .= '</div>';
+
+    $html .= '<div class="report-content">';
+    $html .= '<div class="section-title">Dados da Consulta (Exemplo)</div>';
+    $html .= '<table>';
+    
+    $is_even = false;
+    if (!empty($integration['fields'])) {
+        foreach ($integration['fields'] as $field) {
+            $class = $is_even ? ' class="row-even"' : '';
+            $html .= '<tr' . $class . '>';
+            $html .= '<th>' . esc_html($field['label']) . '</th>';
+            $val = 'Exemplo de Dado';
+            if (isset($field['placeholder']) && !empty($field['placeholder'])) {
+                $val = $field['placeholder'];
+            } elseif (stripos($field['name'], 'nome') !== false) {
+                $val = 'MOCK NOME DA SILVA';
+            } elseif (stripos($field['name'], 'placa') !== false) {
+                $val = 'ABC1D23';
+            } elseif (stripos($field['name'], 'cpf') !== false || stripos($field['name'], 'document') !== false) {
+                $val = '***.456.789-**';
+            }
+            $html .= '<td>' . esc_html($val) . '</td>';
+            $html .= '</tr>';
+            $is_even = !$is_even;
+        }
+    } else {
+        $html .= '<tr><th>Documento / Placa</th><td>(Mock de exemplo)</td></tr>';
+    }
+    $html .= '</table>';
+
+    $html .= '<div class="section-title">Resultado do Relatório</div>';
+    $html .= '<table>';
+    $html .= '<tr><th>Status</th><td>Ativo / Regular</td></tr>';
+    $html .= '<tr class="row-even"><th>Análise de Risco</th><td style="color:#059669; font-weight:bold;">Aprovado - Risco Baixo</td></tr>';
+    $html .= '<tr><th>Informações Adicionais</th><td>Não constam restrições judiciais ou débitos vinculados neste modelo de demonstração.</td></tr>';
+    $html .= '<tr class="row-even"><th>Data da Verificação</th><td>' . date('d/m/Y') . '</td></tr>';
+    $html .= '</table>';
+
+    $html .= '</div>';
+    $html .= '<div class="report-footer">Documento de exemplo gerado pelo sistema Selo Brasil Consultas &mdash; Formato ilustrativo com dados mockados</div>';
+    $html .= '</body></html>';
+
+    $dompdf = new \Dompdf\Dompdf(['isRemoteEnabled' => false]);
+    $dompdf->loadHtml($html);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+    
+    header('Content-Type: application/pdf');
+    echo $dompdf->output();
+    exit;
+}
+
 function serc_plugin_activate()
 {
     add_rewrite_endpoint('consultas', EP_ROOT | EP_PAGES);

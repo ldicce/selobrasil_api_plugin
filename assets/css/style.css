@@ -200,7 +200,8 @@ button {
     grid-template-areas:
         "sidebar header"
         "sidebar content";
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -219,7 +220,8 @@ button {
     flex-direction: column;
     padding: 30px 20px;
     position: relative;
-    overflow: visible;
+    overflow-y: auto;
+    overflow-x: hidden;
     color: #fff;
     z-index: 50;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -791,7 +793,7 @@ button {
     background: var(--bg-color);
     display: block;
     width: 100%;
-    min-height: 100vh;
+    overflow-y: auto;
 }
 
 /* ============================================================
@@ -2579,6 +2581,8 @@ button {
         /* Stack everything */
         height: auto;
         min-height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
         padding-bottom: 80px;
         /* Space for bottom nav */
     }
@@ -2960,6 +2964,10 @@ button {
 }
 
 .form-wrapper button[type="submit"] {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
     background: var(--primary-green) !important;
     color: #fff !important;
     border: none !important;
@@ -2969,10 +2977,48 @@ button {
     cursor: pointer !important;
     font-size: 15px !important;
     margin-top: 10px !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.form-wrapper button[type="submit"] i,
+.form-wrapper button[type="submit"] svg {
+    width: 18px !important;
+    height: 18px !important;
+    stroke-width: 2.5px !important;
 }
 
 .form-wrapper button[type="submit"]:hover {
     background: #007a41 !important;
+}
+
+.dark-mode .form-wrapper button[type="submit"],
+.dark-mode .serc-btn-download-wrapper .action-btn {
+    background: #2A2A2A !important;
+    color: #FFFFFF !important;
+    border: 1px solid #3A3A3A !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.dark-mode .form-wrapper button[type="submit"]:hover,
+.dark-mode .serc-btn-download-wrapper .action-btn:hover {
+    background: #3A3A3A !important;
+    border-color: #4A4A4A !important;
+    color: #FFFFFF !important;
+}
+
+@keyframes lucide-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.lucide-spin {
+    animation: lucide-spin 1s linear infinite;
+}
+
+.serc-modal-btn:hover {
+    filter: brightness(0.9);
+}
+.dark-mode .serc-modal-btn:hover {
+    filter: brightness(1.2);
 }
 
 .result-section {
@@ -5389,7 +5435,10 @@ body.admin-bar .dashboard-wrapper {
 .dark-mode .integration-type,
 .dark-mode .integration-date,
 .dark-mode .empty-state,
-.dark-mode .shop-empty {
+.dark-mode .shop-empty,
+.dark-mode .reports-empty-state,
+.dark-mode .reports-empty-state i,
+.dark-mode .reports-empty-state svg {
     color: var(--text-muted) !important;
 }
 
@@ -5982,6 +6031,7 @@ body.admin-bar .dashboard-wrapper {
 .dark-mode .shop-card__btn:hover {
     background: var(--accent-cta-hover) !important;
     color: #eff6ff !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
 }
 
 .dark-mode .shop-cat-link:hover {
@@ -6866,4 +6916,226 @@ body.admin-bar .dashboard-wrapper {
 }
 .dark-mode ::-webkit-scrollbar-track {
     background: #121212;
+}
+
+/* =============================================================
+   ORDER DETAIL VIEW — light & dark mode
+   ============================================================= */
+
+/* Back button */
+.btn-order-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 10px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    background: transparent;
+    color: var(--text-muted, #64748b);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn-order-back:hover {
+    background: rgba(0, 0, 0, .04);
+    color: var(--text-color, #1e293b);
+    border-color: #cbd5e1;
+}
+.dark-mode .btn-order-back {
+    border-color: var(--border-color);
+    color: var(--text-muted);
+    background: transparent;
+}
+.dark-mode .btn-order-back:hover {
+    background: #2A2A2A;
+    color: var(--text-color);
+    border-color: #3A3A3A;
+}
+
+/* Header row inside order detail */
+.order-detail-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.order-detail-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Large badge variant */
+.order-status-badge--lg {
+    font-size: 13px;
+    padding: 7px 16px;
+    border-radius: 999px;
+}
+
+/* Section containers */
+.order-detail-section {
+    margin-bottom: 32px;
+}
+.order-detail-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
+}
+.order-detail-section-title i,
+.order-detail-section-title svg {
+    color: var(--text-muted);
+    width: 18px;
+    height: 18px;
+}
+
+/* Items table (reuses orders-table base) */
+.order-items-table .order-sku {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+/* Two-column grid: totals + address */
+.order-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+@media (max-width: 768px) {
+    .order-detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Totals box */
+.order-totals-box {
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.order-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    font-size: 14px;
+    color: var(--text-color);
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
+}
+.order-total-row:last-child {
+    border-bottom: none;
+}
+.order-total-row--discount {
+    color: #ef4444;
+}
+.order-total-row--grand {
+    font-weight: 700;
+    font-size: 16px;
+    background: rgba(0, 0, 0, .02);
+}
+.order-payment-method {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Address box */
+.order-address-box {
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 18px 20px;
+    font-size: 14px;
+    color: var(--text-color);
+    line-height: 1.7;
+}
+.order-address-box address {
+    font-style: normal;
+}
+.order-no-address {
+    color: var(--text-muted);
+    margin: 0;
+}
+.order-address-phone {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.order-address-phone i,
+.order-address-phone svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Order notes */
+.order-notes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.order-note-item {
+    padding: 14px 18px;
+    background: rgba(0, 0, 0, .02);
+    border: 1px solid var(--border-color, #f1f5f9);
+    border-radius: 10px;
+}
+.order-note-date {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.order-note-text {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* ── Dark mode overrides ── */
+.dark-mode .order-detail-section-title {
+    border-bottom-color: var(--border-color);
+}
+.dark-mode .order-totals-box {
+    border-color: var(--border-color);
+    background: var(--card-bg);
+}
+.dark-mode .order-total-row {
+    border-bottom-color: var(--border-color);
+    color: var(--text-color);
+}
+.dark-mode .order-total-row--grand {
+    background: rgba(255, 255, 255, .03);
+}
+.dark-mode .order-total-row--discount {
+    color: #f87171;
+}
+.dark-mode .order-address-box {
+    border-color: var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+.dark-mode .order-note-item {
+    background: rgba(255, 255, 255, .02);
+    border-color: var(--border-color);
+}
+.dark-mode .order-note-text {
+    color: var(--text-color);
 }

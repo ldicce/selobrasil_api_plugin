@@ -424,25 +424,18 @@ if (!$is_ajax) {
                         $('#reports-peak-queries').text(rd.activities.length);
 
                         rd.activities.forEach(function(act) {
-                            var creditVal   = act.credit_value ? parseFloat(act.credit_value).toFixed(2) : '—';
-                            var creditClass = act.credit_value ? 'reports-credit-debit' : 'reports-credit-neutral';
-                            var creditDisplay = act.credit_value ? ('−' + creditVal) : '—';
-
-                            var typeLabel = act.type === 'debit'  ? 'Débito'
-                                          : act.type === 'query'  ? 'Consulta'
-                                          : act.type;
-
-                            var typeBadgeClass = act.type === 'debit' ? 'badge-debit' : 'badge-query';
+                            var creditVal   = act.credit_value ? parseFloat(act.credit_value).toFixed(2) : '0.00';
+                            var displayVal  = act.credit_value ? ('-' + creditVal) : creditVal;
 
                             tbody.append(
                                 '<tr>' +
                                 '<td>' +
-                                    '<div class="reports-table-date">' + act.date + '</div>' +
-                                    '<div class="reports-table-time">' + act.time + '</div>' +
+                                    '<div class="reports-table-date" style="font-weight:600; color:var(--text-color);">' + act.date + '</div>' +
+                                    '<div class="reports-table-time" style="color:var(--text-muted);">' + act.time + '</div>' +
                                 '</td>' +
-                                '<td><span class="reports-type-badge ' + typeBadgeClass + '">' + typeLabel + '</span></td>' +
-                                '<td class="reports-table-desc">' + act.description + '</td>' +
-                                '<td class="' + creditClass + '" style="text-align:right;">' + creditDisplay + '</td>' +
+                                '<td><span class="reports-type-badge" style="background:var(--card-bg-elevated, rgba(255,255,255,0.05)); color:var(--text-color); border:1px solid var(--border-color, rgba(255,255,255,0.1)); padding:4px 10px; border-radius:6px; font-size:11px;">Consulta Realizada</span></td>' +
+                                '<td class="reports-table-desc" style="color:var(--text-muted);">' + act.description + '</td>' +
+                                '<td style="text-align:right; font-weight:600; color:var(--text-color);">' + displayVal + '</td>' +
                                 '</tr>'
                             );
                         });
@@ -496,9 +489,96 @@ if (!$is_ajax) {
         }
     });
 
-    /* ─── Export Button (placeholder — não adiciona funcionalidade nova) ─── */
+    /* ─── Export Button ─── */
     $(document).on('click', '#reports-export-btn', function() {
-        // Funcionalidade de exportação não implementada — placeholder visual
+        var $btn = $(this);
+
+        // Determine current active period and custom dates
+        var activePeriod = $('.report-filter-btn.active').data('period') || 'day';
+        var dateFrom = '';
+        var dateTo   = '';
+        if (activePeriod === 'custom') {
+            dateFrom = $('#report-date-from').val();
+            dateTo   = $('#report-date-to').val();
+            if (!dateFrom || !dateTo) {
+                alert('Selecione o intervalo personalizado antes de exportar.');
+                return;
+            }
+        }
+
+        // Loading state
+        $btn.prop('disabled', true).html('<i data-lucide="loader-2" class="lucide-spin"></i> Exportando...');
+        if (window.lucide) lucide.createIcons();
+
+        var requestData = {
+            action: 'serc_get_credit_report_data',
+            nonce: serc_ajax.nonce,
+            period: activePeriod
+        };
+        if (activePeriod === 'custom') {
+            requestData.date_from = dateFrom;
+            requestData.date_to   = dateTo;
+        }
+
+        $.ajax({
+            url:  serc_ajax.ajax_url,
+            type: 'POST',
+            data: requestData,
+            success: function(response) {
+                if (response.success && response.data && response.data.activities) {
+                    var activities = response.data.activities;
+
+                    // Build CSV rows
+                    var csvRows = [
+                        ['"Data"', '"Hora"', '"Tipo"', '"Descricao"', '"Creditos"']
+                    ];
+
+                    activities.forEach(function(act) {
+                        var typeLabel = act.type === 'debit'  ? 'Debito'
+                                      : act.type === 'query'  ? 'Consulta'
+                                      : (act.type || '');
+                        var credits = act.credit_value ? ('-' + parseFloat(act.credit_value).toFixed(2)) : '0.00';
+                        var desc = (act.description || '').replace(/"/g, '""');
+
+                        csvRows.push([
+                            '"' + (act.date || '') + '"',
+                            '"' + (act.time || '') + '"',
+                            '"' + typeLabel + '"',
+                            '"' + desc + '"',
+                            '"' + credits + '"'
+                        ]);
+                    });
+
+                    var csvContent = '\uFEFF' + csvRows.map(function(r) { return r.join(';'); }).join('\r\n');
+                    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    var url  = URL.createObjectURL(blob);
+
+                    // Period label for filename
+                    var periodLabel = { day: 'hoje', week: 'semana', month: 'mes', custom: 'personalizado' }[activePeriod] || activePeriod;
+                    var today = new Date();
+                    var dateStr = today.getFullYear() + ('0'+(today.getMonth()+1)).slice(-2) + ('0'+today.getDate()).slice(-2);
+                    var filename = 'relatorio_' + periodLabel + '_' + dateStr + '.csv';
+
+                    var link = document.createElement('a');
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', filename);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+
+                } else {
+                    alert('Nenhum dado encontrado para exportar no período selecionado.');
+                }
+            },
+            error: function() {
+                alert('Erro ao exportar dados. Tente novamente.');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('<i data-lucide="download"></i> Exportar Dados');
+                if (window.lucide) lucide.createIcons();
+            }
+        });
     });
 
     /* ─── Auto-load Today on Page Load ─── */

@@ -151,7 +151,7 @@ if (!$is_ajax) {
             <div class="pdf-modal__body">
                 <iframe
                     id="pdf-modal-iframe"
-                    src="<?php echo plugins_url('assets/img/lorem_ipsum.pdf', __FILE__); ?>"
+                    src="<?php echo plugins_url('assets/img/modelo_borrado.pdf', __FILE__); ?>"
                     type="application/pdf"
                     width="100%"
                     height="100%"

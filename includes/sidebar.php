@@ -27,8 +27,8 @@ $initials = strtoupper($initials);
     <div class="sidebar-header">
         <div class="sidebar-logo">
             <a href="<?php echo serc_get_dashboard_url(['view' => 'dashboard']); ?>" class="logo-link" style="display:flex; align-items:center;">
-                <img src="<?php echo plugin_dir_url(__FILE__); ?>../assets/img/LOGO_branca.svg" alt="Selo Brasil" class="logo-full" style="max-height: 28px; width: auto;" />
-                <img src="<?php echo plugin_dir_url(__FILE__); ?>../assets/img/selobrasil_icon.svg" alt="Selo Brasil Icon" class="logo-collapsed" style="max-height: 28px; width: auto; display: none;" />
+                <img src="<?php echo plugin_dir_url(__FILE__); ?>../assets/img/LOGO_branca.svg" alt="Selo Brasil" class="logo-full" style="max-height: 40px; width: auto;" />
+                <img src="<?php echo plugin_dir_url(__FILE__); ?>../assets/img/selobrasil_icon.svg" alt="Selo Brasil Icon" class="logo-collapsed" style="max-height: 40px; width: auto; display: none;" />
             </a>
         </div>
         <button type="button" class="sidebar-close-btn" aria-label="Colapsar Menu">

@@ -5,27 +5,61 @@ jQuery(function ($) {
   function base64ToBlobUrl(dataUrlOrBase64) {
     var s = dataUrlOrBase64 || '';
     if (s.indexOf('data:') === 0) return s;
-    var b64 = s.replace(/^data:.*;base64,/, '');
-    try { var bstr = atob(b64); } catch (e) { return null; }
+    // Remove data URI prefix if present, then strip whitespace/newlines
+    var b64 = s.replace(/^data:.*;base64,/, '').replace(/[\s\r\n]+/g, '');
+    // Fix padding if missing
+    var pad = b64.length % 4;
+    if (pad > 0) {
+      b64 += '===='.slice(pad);
+    }
+    try { var bstr = atob(b64); } catch (e) { console.error('[SERC] base64 decode error:', e); return null; }
     var n = bstr.length, u8 = new Uint8Array(n);
     for (var i = 0; i < n; i++) u8[i] = bstr.charCodeAt(i);
     var blob = new Blob([u8], { type: 'application/pdf' });
     return URL.createObjectURL(blob);
   }
   function showConfirm($form) {
-    var $ov = $('<div class="serc-modal-overlay" />').attr('style', 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999');
-    var $md = $('<div class="serc-modal" />').attr('style', 'background:#fff;border-radius:8px;padding:20px;max-width:360px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:center');
-    var $txt = $('<div>Deseja realmente realizar a consulta?</div>').attr('style', 'margin-bottom:16px;font-size:14px;color:#333');
-    var $ok = $('<button type="button">Confirmar</button>').attr('style', 'margin-right:8px;padding:8px 12px;background:#2271b1;color:#fff;border:none;border-radius:4px;cursor:pointer');
-    var $cancel = $('<button type="button">Cancelar</button>').attr('style', 'padding:8px 12px;background:#eee;color:#333;border:none;border-radius:4px;cursor:pointer');
-    $md.append($txt, $('<div />').append($ok, $cancel));
+    var isDark = $('body').hasClass('dark-theme') || $('html').hasClass('dark') || document.documentElement.getAttribute('data-theme') === 'dark';
+    var bgCard = isDark ? '#1E1E1E' : '#FFFFFF';
+    var textColor = isDark ? '#FFFFFF' : '#111111';
+    var textMuted = isDark ? '#AAAAAA' : '#666666';
+    var borderColor = isDark ? '#333333' : '#E5E7EB';
+    var btnBg = isDark ? '#2A2A2A' : '#F3F4F6';
+    
+    var $ov = $('<div class="serc-modal-overlay" />').attr('style', 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(4px);');
+    var $md = $('<div class="serc-modal" />').attr('style', 'background:' + bgCard + ';border-radius:16px;padding:30px 24px;max-width:380px;width:92%;box-shadow:0 20px 40px rgba(0,0,0,.3);text-align:center;border:1px solid ' + borderColor);
+    var $iconContainer = $('<div />').attr('style', 'background:rgba(0,156,59,.1);width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:var(--primary-green, #009c3b)');
+    var $icon = $('<i data-lucide="help-circle" style="width:32px;height:32px;stroke-width:2px;"></i>');
+    $iconContainer.append($icon);
+    
+    var $txt = $('<div><h3 style="margin:0 0 12px;font-size:20px;font-weight:600;color:' + textColor + ';">Confirmar Consulta</h3><p style="margin:0 0 24px;font-size:14px;color:' + textMuted + ';line-height:1.5;">Deseja realmente realizar esta consulta? Seu saldo de créditos será atualizado ao concluir.</p></div>');
+    
+    var $ok = $('<button type="button" class="serc-modal-btn">Sim, Consultar</button>').attr('style', 'display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:1;padding:12px 16px;background:var(--primary-green, #009c3b);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:500;font-size:14px;transition:background 0.2s;height:44px;');
+    var $cancel = $('<button type="button" class="serc-modal-btn">Cancelar</button>').attr('style', 'display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:1;padding:12px 16px;background:' + btnBg + ';color:' + textColor + ';border:1px solid ' + borderColor + ';border-radius:8px;cursor:pointer;font-weight:500;font-size:14px;transition:background 0.2s;height:44px;');
+    var $btnWrapper = $('<div />').attr('style', 'display:flex;justify-content:center;gap:12px;width:100%').append($cancel, $ok);
+    
+    $md.append($iconContainer, $txt, $btnWrapper);
     $ov.append($md);
     $('body').append($ov);
+    if (window.lucide) { window.lucide.createIcons({root: $md[0]}); }
+    
     function close() { $ov.remove(); }
     $cancel.on('click', function () { close(); });
-    $ov.on('click', function (e) { if (e.target === this) close(); });
+    // Disable click-outside to avoid accidental dismiss during loading
     $(document).on('keydown.sercModal', function (e) { if (e.key === 'Escape') { $(document).off('keydown.sercModal'); close(); } });
-    $ok.on('click', function () { $(document).off('keydown.sercModal'); close(); handleSubmit($form); });
+    
+    $ok.on('click', function () {
+      $(document).off('keydown.sercModal');
+      // Set loading state on modal button
+      $ok.prop('disabled', true).html('<i data-lucide="loader-2" class="lucide-spin" style="width:18px;height:18px;"></i> Processando...');
+      $cancel.prop('disabled', true).css('opacity', '0.5');
+      if (window.lucide) { window.lucide.createIcons({root: $ok[0]}); }
+      
+      // Call handleSubmit with completion callback
+      handleSubmit($form, function() {
+        close();
+      });
+    });
   }
 
   // ── User Avatar Dropdown ──────────────────────────────────────────────────
@@ -58,7 +92,7 @@ jQuery(function ($) {
   });
   // ─────────────────────────────────────────────────────────────────────────
 
-  function handleSubmit($form) {
+  function handleSubmit($form, onComplete) {
     var type = $form.data('type');
     var payload = { action: 'serc_lookup', nonce: serc_ajax.nonce, type: type };
     // Generic Payload Builder - maps all form inputs to payload
@@ -90,8 +124,15 @@ jQuery(function ($) {
     });
     var $result = $form.find('.serc-result');
     var $submit = $form.find('button[type="submit"]');
-    $submit.prop('disabled', true).hide();
-    $result.html('<span style="color:#555">Consultando...</span>');
+    
+    // Clear previous results and buttons
+    $result.empty();
+    $form.find('.serc-btn-download-wrapper').remove();
+    
+    // Save original button text and show loading
+    var originalBtnText = $submit.html();
+    $submit.prop('disabled', true).html('<i data-lucide="loader-2" class="lucide-spin"></i> Processando...');
+    if (window.lucide) { window.lucide.createIcons(); }
 
     console.log('[SERC] Sending AJAX request to:', serc_ajax.ajax_url);
     console.log('[SERC] Payload:', payload);
@@ -101,23 +142,29 @@ jQuery(function ($) {
 
       if (resp && resp.success) {
         console.log('[SERC] Success! Data:', resp.data);
-        var saldo = (typeof resp.data.quota !== 'undefined') ? parseFloat(resp.data.quota).toFixed(2) : '0.00';
-        var deb = (typeof resp.data.debited !== 'undefined') ? parseFloat(resp.data.debited).toFixed(2) : null;
-        var msg = '<span style="color:green;font-weight:bold;">Consulta realizada com sucesso.</span>';
-        var det = '<small>' + (deb !== null ? ('Crédito debitado: ' + deb + ' | ') : '') + 'Saldo restante: ' + saldo + '</small>';
-        $result.html(msg + '<br>' + det);
+        
+        // Remove text confirmation as requested by user
+        $result.empty();
+        
         var dl = resp.data && resp.data.result && resp.data.result.download_url;
+        var btnHtml = '';
         if (dl) {
-          $result.append('<p><a class="action-btn" href="' + dl + '"><i data-lucide="download"></i> Download PDF</a></p>');
+          btnHtml = '<a class="action-btn" href="' + dl + '" style="margin-left: 10px; display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 20px; background: var(--primary-green); color: #fff; border-radius: 6px; text-decoration: none; font-weight: 500;"><i data-lucide="download" style="margin-right:5px;"></i> Baixar PDF</a>';
         } else {
+          // Fallback: check for pdfBase64 directly from the server response
           var pdfB64 = (resp.data && resp.data.result && resp.data.result.pdfBase64) || (resp.data && resp.data.pdfBase64);
           if (pdfB64) {
             var url = base64ToBlobUrl(pdfB64);
             if (url) {
               console.log('[SERC] PDF blob URL created:', url);
-              $result.append('<p><a class="action-btn" href="' + url + '" download="consulta.pdf"><i data-lucide="download"></i> Download PDF</a></p>');
+              btnHtml = '<a class="action-btn" href="' + url + '" download="consulta.pdf" style="margin-left: 10px; display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 20px; background: var(--primary-green); color: #fff; border-radius: 6px; text-decoration: none; font-weight: 500;"><i data-lucide="download" style="margin-right:5px;"></i> Baixar PDF</a>';
             }
           }
+        }
+        
+        if (btnHtml !== '') {
+            $submit.after('<span class="serc-btn-download-wrapper">' + btnHtml + '</span>');
+            if (window.lucide) { window.lucide.createIcons(); }
         }
         var ul = resp.data && resp.data.result && resp.data.result.upload_log;
         if (ul && ul.meta) {
@@ -149,14 +196,16 @@ jQuery(function ($) {
           $result.html('<span style="color:red;font-weight:bold;">Erro ao processar. Tente novamente.</span>');
         }
       }
-      $submit.prop('disabled', false).show();
+      $submit.prop('disabled', false).html(originalBtnText);
+      if (typeof onComplete === 'function') { onComplete(); }
     }).fail(function (xhr, status, error) {
       console.error('[SERC] AJAX request failed!');
       console.error('[SERC] Status:', status);
       console.error('[SERC] Error:', error);
       console.error('[SERC] Response:', xhr.responseText);
       $result.html('<span style="color:red;font-weight:bold;">Erro ao processar. Tente novamente.</span>');
-      $submit.prop('disabled', false).show();
+      $submit.prop('disabled', false).html(originalBtnText);
+      if (typeof onComplete === 'function') { onComplete(); }
     });
   }
 
@@ -392,7 +441,8 @@ jQuery(function ($) {
             type: params.get('type') || '',
             integration: params.get('integration') || '',
             category: params.get('category') || '',
-            paged: params.get('paged') || 1
+            paged: params.get('paged') || 1,
+            order_id: params.get('order_id') || 0
           },
           success: function (response) {
             console.log('[SERC Navigation] Response received:', response);

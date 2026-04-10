@@ -86,7 +86,7 @@ if (!$is_ajax) {
                             <td><span class="order-status-badge <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_label); ?></span></td>
                             <td>R$ <?php echo number_format(floatval($order_total), 2, ',', '.'); ?></td>
                             <td>
-                                <a href="<?php echo esc_url($order->get_view_order_url()); ?>" class="btn-order-view" target="_blank">
+                                <a href="<?php echo esc_url(serc_get_dashboard_url(['view' => 'order-detail', 'order_id' => $order_id])); ?>" class="btn-order-view serc-nav-link" data-view="order-detail" data-order-id="<?php echo $order_id; ?>">
                                     <i data-lucide="eye"></i> Ver
                                 </a>
                             </td>
