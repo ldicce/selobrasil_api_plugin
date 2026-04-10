@@ -1,3 +1,12 @@
+window.sercToggleAccountSheet = function() {
+  var sheet = document.getElementById('sercAccountSheet');
+  var overlay = document.getElementById('sercAccountSheetOverlay');
+  if (sheet && overlay) {
+    sheet.classList.toggle('active');
+    overlay.classList.toggle('active');
+  }
+};
+
 jQuery(function ($) {
   function cleanDigits(str) { return (str || '').replace(/\D+/g, ''); }
   function cleanPlate(str) { return (str || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
@@ -143,6 +152,9 @@ jQuery(function ($) {
       if (resp && resp.success) {
         console.log('[SERC] Success! Data:', resp.data);
         
+        // Invalidate view cache since a query was performed (balances/history changed)
+        window.sercViewCache = {};
+
         // Remove text confirmation as requested by user
         $result.empty();
         
@@ -339,6 +351,9 @@ jQuery(function ($) {
 
       console.log('[SERC Navigation] Dashboard detected, AJAX navigation enabled');
 
+      // Global View Cache
+      window.sercViewCache = {};
+
       // =============================================
       // Dark / Light Mode Toggle
       // =============================================
@@ -421,15 +436,61 @@ jQuery(function ($) {
         });
       }
 
+      function generateCacheKey(params) {
+          var key = (params.get('view') || 'dashboard');
+          if (params.get('type')) key += '_' + params.get('type');
+          if (params.get('integration')) key += '_' + params.get('integration');
+          if (params.get('category')) key += '_' + params.get('category');
+          if (params.get('paged')) key += '_' + params.get('paged');
+          if (params.get('order_id')) key += '_' + params.get('order_id');
+          return key;
+      }
+
+      function renderViewHtml(html, viewType, url) {
+          var $content = $('.area-content');
+          $content.css({ transition: 'opacity 0.15s ease, transform 0.15s ease', opacity: 0, transform: 'translateY(10px)' });
+          
+          setTimeout(function() {
+              $content.html(html);
+              if (typeof serc_initLucide === 'function') serc_initLucide();
+              if (viewType === 'category') {
+                  $content.css('grid-template-columns', '1fr');
+              } else {
+                  $content.css('grid-template-columns', '');
+              }
+              updateSidebarActiveState(viewType);
+              window.history.pushState({ view: viewType }, '', url);
+              
+              // Force reflow
+              $content[0].offsetHeight;
+              $content.css({ opacity: 1, transform: 'translateY(0)' });
+          }, 150);
+      }
+
       // Function to load view via AJAX
       function loadView(url) {
         console.log('[SERC Navigation] Loading view:', url);
 
         var urlObj = new URL(url, window.location.origin);
         var params = new URLSearchParams(urlObj.search);
+        var cacheKey = generateCacheKey(params);
 
-        // Show loading state
-        $('.area-content').css('opacity', '0.5');
+        if (window.sercViewCache[cacheKey]) {
+            console.log('[SERC Navigation] Fast booting from cache for key:', cacheKey);
+            renderViewHtml(window.sercViewCache[cacheKey].html, window.sercViewCache[cacheKey].view, url);
+            return;
+        }
+
+        // Show Progress loader
+        if ($('.serc-nprogress').length === 0) {
+            $('body').append('<div class="serc-nprogress" style="position:fixed;top:0;left:0;width:100%;height:3px;z-index:99999;background:linear-gradient(to right, #10B981, #34D399);transform-origin:left;transform:scaleX(0);opacity:0;"></div>');
+        }
+        var $loader = $('.serc-nprogress');
+        $loader.css({ transition: 'none', opacity: 1, transform: 'scaleX(0)' });
+        
+        // Force reflow
+        $loader[0].offsetHeight;
+        $loader.css({ transition: 'transform 0.4s ease', transform: 'scaleX(0.4)' });
 
         // Make AJAX request
         $.ajax({
@@ -445,43 +506,27 @@ jQuery(function ($) {
             order_id: params.get('order_id') || 0
           },
           success: function (response) {
-            console.log('[SERC Navigation] Response received:', response);
+            $loader.css({ transition: 'transform 0.2s ease', transform: 'scaleX(0.8)' });
 
             if (response.success && response.data && response.data.html) {
-              // Replace content
-              $('.area-content').html(response.data.html);
+              // Cache it
+              window.sercViewCache[cacheKey] = {
+                  html: response.data.html,
+                  view: response.data.view
+              };
               
-              // Re-initialize Lucide Icons for newly injected DOM elements
-              if (typeof serc_initLucide === 'function') {
-                  serc_initLucide();
-              }
+              setTimeout(function() {
+                  $loader.css({ transition: 'transform 0.2s ease', transform: 'scaleX(1)' });
+                  setTimeout(function() { $loader.css({ transition: 'opacity 0.2s ease', opacity: 0 }); }, 200);
+              }, 50);
 
-              // Adjust grid layout based on view type
-              if (response.data.view === 'category') {
-                $('.area-content').css('grid-template-columns', '1fr');
-              } else {
-                $('.area-content').css('grid-template-columns', '');
-              }
-
-              // Update sidebar active state
-              updateSidebarActiveState(response.data.view);
-
-              // Update URL without reload
-              window.history.pushState({ view: response.data.view }, '', url);
-
-              // Restore opacity
-              $('.area-content').css('opacity', '1');
-
-              console.log('[SERC Navigation] Content updated successfully');
+              renderViewHtml(response.data.html, response.data.view, url);
             } else {
-              console.warn('[SERC Navigation] Invalid response, falling back to page reload');
-              // Fallback to full page load
               window.location.href = url;
             }
           },
           error: function (xhr, status, error) {
             console.error('[SERC Navigation] AJAX error:', status, error);
-            // Fallback to full page load on error
             window.location.href = url;
           }
         });

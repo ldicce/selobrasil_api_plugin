@@ -2545,11 +2545,12 @@ button {
     right: 0;
     background: #fff;
     border-top: 1px solid #eee;
-    height: 70px;
+    height: 60px;
     align-items: center;
     justify-content: space-around;
-    z-index: 999;
-    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
 }
 
 .mobile-nav-item {
@@ -2572,354 +2573,389 @@ button {
     color: var(--primary-green);
 }
 
-/* MOBILE RESPONSIVENESS */
+/* History Item Rows (Desktop) */
+.history-item-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 100px;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color, #eee);
+    gap: 15px;
+}
+.history-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.history-item-date {
+    font-weight: 600;
+    font-size: 14px;
+}
+.history-item-type {
+    font-size: 11px;
+    color: var(--text-muted, #999);
+}
+.history-item-action {
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Mobile Submenu Desktop Hider */
+.serc-account-sheet-overlay,
+.serc-account-sheet {
+    display: none;
+}
+
+/* ============================================================
+   MOBILE RESPONSIVENESS — Comprehensive Overhaul
+   ============================================================ */
 @media (max-width: 768px) {
 
-    /* Main Layout */
+    /* ── Layout ───────────────────────────────────────────── */
     .dashboard-wrapper {
         display: block;
-        /* Stack everything */
         height: auto;
         min-height: 100vh;
         overflow-y: auto;
         overflow-x: hidden;
-        padding-bottom: 80px;
-        /* Space for bottom nav */
+        /* Adds clearance below for bottom nav (60px) + safe area */
+        padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 16px);
     }
 
-    /* Hide Desktop Sidebar */
+    /* Sidebar hidden on mobile — always */
     .area-sidebar {
         display: none !important;
     }
+    .area-logo {
+        display: none;
+    }
 
-    /* Header Adjustments */
+    /* ── Header ───────────────────────────────────────────── */
     .area-header {
-        padding: 15px 20px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
         height: auto;
-        flex-direction: column;
-        gap: 15px;
         position: sticky;
         top: 0;
         z-index: 100;
+        gap: 8px;
     }
 
     .header-left {
-        width: 100%;
-        justify-content: space-between;
-        gap: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
     }
 
-    /* Hide Breadcrumb text on mobile if needed, or adjust */
     .dashboard-crumb {
         display: none;
     }
 
     .mobile-logo {
         display: flex !important;
-        grid-area: logo;
-        /* Assign to the logo area in our new mobile grid */
-    }
-
-    /* Make Logo visible in header if we move it there, 
-       but currently it's in .area-logo which is grid area 'logo'.
-       We need to handle .area-logo visibility.
-    */
-    .area-logo {
-        display: none;
-        /* We might want to move logo to header-left for mobile */
-    }
-
-    /* Re-structure Header for Mobile: Logo Left, Credits Right, Search Below */
-    .area-header {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        grid-template-areas:
-            "logo credits"
-            "search search";
         align-items: center;
-        padding: 15px;
+        gap: 6px;
+        flex-shrink: 0;
     }
-
-    /* We need to inject the logo into the header or make .area-logo part of the flow.
-       Since HTML structure is fixed, we might need a mobile-only logo in the header
-       or adjust the grid areas. 
-       Let's try to simulate the structure:
-    */
-
-    /* Reset areas for mobile block layout */
-    .area-logo,
-    .area-header,
-    .area-sidebar,
-    .area-content {
-        grid-area: auto;
-    }
-
-    /* Force display:none on the separate logo area container to avoid duplication if we add one,
-       OR style it to be the top bar. 
-       Current HTML: .area-logo is separate. 
-       Let's hide .area-logo and put a logo inside .area-header via JS or PHP, 
-       OR just style .area-logo and .area-header to stack correctly.
-    */
-    .area-logo {
-        display: flex;
-        position: absolute;
-        /* Hacky? No, let's just use flex order or display */
-        border: none;
-        padding: 10px 20px;
+    .mobile-logo-img {
+        height: 28px;
         width: auto;
-        height: 60px;
-        z-index: 101;
     }
-
-    /* Actually, better approach: 
-       Hide .area-logo.
-       Show a mobile logo inside .header-left.
-    */
-    .area-logo {
+    .mobile-logo span {
         display: none;
     }
 
-    .header-left {
-        flex-direction: column;
-        /* Search below */
-        align-items: flex-start;
-        display: contents;
-        /* Let children flow in grid */
-    }
-
-    /* Global Search - Full Width below */
+    /* Search: compact pill, not full-width */
     .global-search {
-        grid-area: search;
-        width: 100%;
-        margin-top: 10px;
+        display: none !important; /* Hide Search entirely on Mobile */
     }
-
     .global-search input {
         width: 100%;
-        background: #F3F4F6;
-        border: none;
-        padding: 12px 15px 12px 40px;
-        border-radius: 8px;
-        /* Softer radius */
-    }
-
-    /* Header Right - Credits */
-    .header-right {
-        grid-area: credits;
-        gap: 10px;
-    }
-
-    .user-avatar {
-        display: none;
-        /* Hide avatar on mobile to save space? Image shows credits. */
-    }
-
-    .credits-capsule {
-        background: #F0FDF4;
-        /* Light green */
-        border-radius: 20px;
-        padding: 6px 12px;
         font-size: 13px;
+        padding: 8px 10px 8px 34px;
+        background: var(--bg-secondary, #F3F4F6);
+        border: none;
+        border-radius: 20px;
     }
 
-    /* Content Area */
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+    .header-help-btn,
+    .theme-toggle-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .user-avatar {
+        width: 28px !important;
+        height: 28px !important;
+    }
+    .user-avatar-link i[data-lucide="chevron-down"] {
+        display: none;
+    }
+    .credits-capsule {
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 20px;
+    }
+
+    /* ── Content Area ─────────────────────────────────────── */
     .area-content {
         display: block;
-        /* Stack columns */
-        padding: 20px;
+        padding: 14px;
         max-width: 100vw;
         overflow-x: hidden;
     }
 
-    .dashboard-main {
-        max-width: 100%;
+    /* ── Dashboard Redesign Container ─────────────────────── */
+    .dashboard-redesign {
+        gap: 20px;
     }
 
-    /* Query Sidebar Spacing */
-    .sidebar-wrapper {
-        margin-top: 40px;
-        margin-bottom: 80px;
-        border-top: 1px solid #eee;
-        padding-top: 30px;
+    /* ── Greeting header ──────────────────────────────────── */
+    .dash-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .dash-title {
+        font-size: 20px;
+        margin-bottom: 2px;
+    }
+    .dash-subtitle {
+        font-size: 13px;
+    }
+    .dash-status-badge {
+        font-size: 11px;
+        padding: 5px 10px;
     }
 
-    /* Action Grid - 2 Columns Grid */
+    /* ── Action Bar ───────────────────────────────────────── */
+    .dash-action-bar {
+        flex-direction: row;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
+    .dash-action-btn-primary {
+        font-size: 13px;
+        padding: 10px 16px;
+        margin-left: 0;
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* ── Category Carousel ────────────────────────────────── */
+    /* Keep carousel behavior on mobile — swipeable, snapping */
+    .dash-metrics-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 12px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 8px;
+        cursor: grab;
+    }
+    .dash-metric-card {
+        flex: 0 0 72vw;
+        max-width: 280px;
+        min-height: 110px;
+        scroll-snap-align: start;
+        padding: 16px 18px;
+    }
+    .card-value {
+        font-size: 22px;
+    }
+    .card-desc, .card-badge {
+        font-size: 11px;
+    }
+
+    /* ── Summary Tiles (Credits / Queries count) ──────────── */
+    .dash-summary-row,
+    .dash-panes-row {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .dash-summary-tile {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .tile-value {
+        font-size: 26px;
+    }
+    .tile-label {
+        font-size: 12px;
+    }
+
+    /* ── Panes Full Width ─────────────────────────────────── */
+    .dash-pane,
+    .dash-pane.pane-full-width {
+        border-radius: 12px;
+        padding: 16px;
+    }
+    .pane-header h3 {
+        font-size: 15px;
+    }
+    .pane-header p {
+        font-size: 12px;
+        margin-top: 2px;
+    }
+
+    /* ── Action Grid (Home quick access cards) ────────────── */
     .action-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-        padding-bottom: 0;
-        margin-bottom: 25px;
+        gap: 12px;
+        margin-bottom: 20px;
         overflow-x: visible;
     }
-
     .action-card {
-        width: 100%;
-        padding: 20px 10px;
-        font-size: 13px;
+        padding: 16px 10px;
+        font-size: 12px;
+        border-radius: 12px;
         flex: none;
         scroll-snap-align: none;
+        text-align: center;
+    }
+    .action-card i,
+    .action-card svg {
+        width: 42px;
+        height: 42px;
+        font-size: 20px;
+        border-radius: 50%;
+        background: var(--primary-green-light, #E6F7EF);
+        color: var(--primary-green);
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        text-align: center;
-        height: 100%;
+        margin-bottom: 4px;
+    }
+    .action-card.wide {
+        grid-column: span 2;
     }
 
-    /* Integration Tables / Lists - Remove fixed width on mobile */
-    .history-table,
-    .integration-table,
-    .integration-header,
-    .integration-row {
-        min-width: 0 !important;
-        width: 100%;
-    }
-
-    /* Wrap tables in a scroll container if not already
-       (We might need to add this wrapper via JS or PHP,
-        but for now let's try to make the containers scrollable)
-    */
-    .history-container,
+    /* ── Integration List (Category view rows) ────────────── */
     .integration-table {
-        overflow-x: auto;
-        display: block;
-        /* Ensure it behaves as a block for styling */
+        overflow-x: visible;
     }
-
-    /* Adjust Integration Row for Mobile if we want stacking instead of scrolling */
-    /* Alternatively, stack them for better UX */
     .integration-header {
         display: none;
-        /* Hide headers on mobile */
     }
-
     .integration-row {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "info action"
+            "meta meta";
+        gap: 6px;
+        padding: 14px;
+        border-radius: 10px;
         min-width: 0;
-        /* Reset width */
         width: 100%;
-        padding: 15px;
-        gap: 10px;
-        border-bottom: 1px solid #eee;
-        position: relative;
-        /* Context for absolute positioning */
+        border-bottom: 1px solid var(--border-color, #eee);
     }
-
     .integration-info {
+        grid-area: info;
+        padding-right: 0;
         width: 100%;
-        padding-right: 90px;
-        /* Space for credit value */
     }
-
-    .integration-value {
-        position: absolute;
-        top: 15px;
-        right: 10px;
-        /* Reduced from 15px */
-        font-size: 12px;
-        /* Reduced from 14px */
-        background: #f0fdf4;
-        padding: 4px 8px;
-        border-radius: 4px;
-        max-width: 100px;
-        /* Prevent it from getting too wide */
-        text-align: right;
+    .integration-action {
+        grid-area: action;
+        display: flex;
+        align-items: flex-start;
     }
-
-    .integration-type,
-    .integration-date {
-        padding-left: 0;
-        margin-top: 2px;
+    .integration-value,
+    .integration-type {
+        grid-area: meta;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        position: static;
         font-size: 11px;
-        color: #999;
-        align-self: flex-end;
-        /* Push to right in flex column */
-        text-align: right;
+        padding: 0;
     }
-
-    /* Re-arrange grid columns for the row items */
-    .integration-table .integration-row>div {
-        /* This selects the direct children of the grid-turned-flex row */
-        text-align: left;
+    .integration-name {
+        font-size: 14px;
+        font-weight: 600;
     }
-
-    /* Sidebar Items (Category Sidebar) */
-    .sidebar-item-desc {
+    .integration-description {
+        font-size: 12px;
+        white-space: normal;
         -webkit-line-clamp: 2;
         line-clamp: 2;
     }
 
-    /* Category View Mobile Adjustments */
-    .category-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 15px;
+    /* ── History Row Mobile (Grid Card) ───────────────────── */
+    .history-item-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "id status"
+            "date action";
+        gap: 10px;
+        padding: 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color, #f1f5f9);
+        border-bottom: 1px solid var(--border-color, #f1f5f9);
+        margin-bottom: 10px;
+        background: transparent;
     }
-
-    .btn-consultar-green {
-        justify-content: center;
-        width: 100%;
-    }
-
-    .category-tabs {
-        overflow-x: auto;
-        white-space: nowrap;
-        padding-bottom: 5px;
-    }
-
-    .category-tab {
-        flex-shrink: 0;
-    }
-
-    /* Remove previous grid definition for integration-row inside media query if it conflicts */
-
-
-    .action-card i,
-    .action-card svg {
-        background: #E6F7EF;
-        /* Green circle bg */
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
+    .history-item-id {
+        grid-area: id;
         display: flex;
         align-items: center;
+    }
+    .history-item-status {
+        grid-area: status;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+    .history-item-info {
+        grid-area: date;
+        display: flex;
+        flex-direction: column;
         justify-content: center;
-        font-size: 24px;
-        color: var(--primary-green);
-        margin-bottom: 5px;
+    }
+    .history-item-action {
+        grid-area: action;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
     }
 
-    /* Special colors for specific icons if needed */
-    /* .action-card:nth-child(2) i, /* .action-card:nth-child(2) svg { color: ... } */
-
-    /* Stats Grid */
+    /* ── Stats Grid ───────────────────────────────────────── */
     .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
     }
-
     .stat-card {
-        padding: 15px;
-        border-radius: 16px;
-        /* Increased radius */
+        padding: 14px;
+        border-radius: 12px;
         box-shadow: none;
-        border: 1px solid #F0F0F0;
+        border: 1px solid var(--border-color, #F0F0F0);
     }
-
-    .stat-title {
-        font-size: 13px;
-        color: #1a1a1a;
-        font-weight: 700;
-        /* Bolder */
-    }
-
     .stat-value {
         font-size: 20px;
-        margin-top: 5px;
     }
-
+    .stat-title {
+        font-size: 12px;
+    }
     .btn-buy-credits {
         width: 100%;
         justify-content: center;
@@ -2928,29 +2964,325 @@ button {
         margin-top: 10px;
     }
 
-    /* Favorites Grid */
+    /* ── Favorites Grid ───────────────────────────────────── */
     .fav-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
     }
-
     .fav-card {
         font-size: 12px;
-        justify-content: space-between;
+    }
+    .fav-grid-centered {
+        grid-template-columns: repeat(2, 1fr);
     }
 
-    /* Right Sidebar (Activity) - Move below */
+    /* ── History View ─────────────────────────────────────── */
+    .history-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .history-table {
+        min-width: 520px;
+        white-space: nowrap;
+    }
+    .history-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    .history-filters {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* ── Reports View ─────────────────────────────────────── */
+    #report-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .reports-history-table {
+        min-width: 540px;
+        white-space: nowrap;
+    }
+    .reports-analytics-layout {
+        flex-direction: column;
+        gap: 14px;
+    }
+    .reports-chart-block,
+    .reports-metrics-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* ── Shop View ────────────────────────────────────────── */
+    .shop-layout,
+    .shop-layout-modern {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .shop-sidebar,
+    .shop-sidebar-refined {
+        padding: 14px 0;
+    }
+    .shop-categories,
+    .shop-categories-list {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        gap: 12px;
+    }
+    .shop-cat-link,
+    .shop-cat-btn {
+        white-space: nowrap;
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    .shop-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
+    }
+    .shop-card__image-wrap {
+        height: 130px;
+    }
+    .shop-card__body {
+        padding: 12px;
+    }
+    .shop-card__name {
+        font-size: 14px;
+    }
+    .shop-card__price {
+        font-size: 16px;
+    }
+
+    /* ── Orders View ──────────────────────────────────────── */
+    .orders-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .orders-table {
+        min-width: 500px;
+        white-space: nowrap;
+    }
+
+    /* ── Order Detail View ────────────────────────────────── */
+    .order-detail-grid {
+        flex-direction: column;
+        gap: 16px;
+    }
+    .order-detail-main,
+    .order-detail-sidebar {
+        width: 100% !important;
+    }
+
+    /* ── Settings View ────────────────────────────────────── */
+    .settings-layout,
+    .settings-grid {
+        flex-direction: column;
+        gap: 16px;
+    }
+    .settings-card {
+        padding: 16px;
+    }
+    .theme-cards-row {
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    /* ── Query Form View ──────────────────────────────────── */
+    .query-form-layout {
+        flex-direction: column;
+        gap: 16px;
+    }
+    .form-wrapper {
+        padding: 16px;
+        border-radius: 12px;
+    }
+    .sidebar-wrapper {
+        margin-top: 20px;
+        margin-bottom: 0;
+        border-top: 1px solid var(--border-color, #eee);
+        padding-top: 20px;
+    }
+
+    /* ── Category Tabs (query subtype navigation) ─────────── */
+    .category-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        padding-bottom: 6px;
+        flex-wrap: nowrap;
+    }
+    .category-tab {
+        flex-shrink: 0;
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    .category-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .btn-consultar-green {
+        justify-content: center;
+        width: 100%;
+    }
+
+    /* ── Sidebar category list ────────────────────────────── */
+    .sidebar-item-desc {
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+    }
+
+    /* ── Right sidebar ────────────────────────────────────── */
     .right-sidebar {
-        margin-top: 30px;
+        margin-top: 20px;
     }
 
-    /* Bottom Navigation */
+    /* ── Bottom Navigation (Enabled on Mobile) ────────────── */
     .mobile-bottom-nav {
         display: flex;
     }
+    /* ── Account Bottom Sheet ─────────────────────────────── */
+    .serc-account-sheet-overlay,
+    .serc-account-sheet {
+        display: block;
+    }
+    .serc-account-sheet-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 1001; /* Above bottom nav */
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+    }
+    .serc-account-sheet-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .serc-account-sheet {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        background: var(--bg-color, #fff);
+        z-index: 1002;
+        border-radius: 20px 20px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    }
+    .serc-account-sheet.active {
+        transform: translateY(0);
+    }
+    .serc-account-sheet-drag {
+        width: 40px;
+        height: 5px;
+        background: var(--border-color, #e5e7eb);
+        border-radius: 3px;
+        margin: 12px auto;
+    }
+    .serc-account-sheet-content {
+        padding: 0 20px 20px;
+    }
+    .serc-account-sheet-header {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .serc-account-sheet-header h3 {
+        margin: 0 0 4px;
+        font-size: 18px;
+    }
+    .serc-account-sheet-header p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-muted, #6B7280);
+    }
+    .serc-sheet-item {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        border-radius: 12px;
+        background: var(--bg-secondary, #f9fafb);
+        text-decoration: none;
+        color: var(--text-color, #1f2937);
+        margin-bottom: 10px;
+        font-weight: 500;
+        transition: background 0.2s ease;
+    }
+    .serc-sheet-item:active {
+        background: var(--border-color, #e5e7eb);
+    }
+    .serc-sheet-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        color: var(--primary-green, #10B981);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .serc-sheet-text {
+        flex: 1;
+        font-size: 14px;
+    }
+    .serc-sheet-arrow {
+        color: var(--text-muted, #9CA3AF);
+        width: 18px; height: 18px;
+    }
+    .serc-sheet-divider {
+        height: 1px;
+        background: var(--border-color, #f3f4f6);
+        margin: 16px 0;
+    }
+    .serc-sheet-item.serc-sheet-danger {
+        color: #EF4444;
+        background: #FEF2F2;
+    }
+    .serc-sheet-item.serc-sheet-danger .serc-sheet-icon {
+        color: #EF4444;
+    }
+    
+    .dark-mode .serc-sheet-item { background: rgba(255,255,255,0.03); color: #e5e7eb; }
+    .dark-mode .serc-sheet-icon { background: rgba(255,255,255,0.05); color: #34D399; }
+    .dark-mode .serc-sheet-item.serc-sheet-danger { background: rgba(239, 68, 68, 0.1); }
+    .dark-mode .serc-account-sheet { background: #1f2937; }
 
-    /* Hide specific span in mobile logo to prevent double text if SVG has text */
-    .mobile-logo span {
-        display: none;
+} /* <--- Closes media queries */
+
+/* ── Extra-small phones (< 480px) ────────────────────────── */
+@media (max-width: 480px) {
+    .area-content {
+        padding: 10px;
+    }
+    .dash-title {
+        font-size: 18px;
+    }
+    .dash-metric-card {
+        flex: 0 0 82vw;
+    }
+    .action-grid {
+        gap: 10px;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .fav-grid,
+    .fav-grid-centered {
+        grid-template-columns: 1fr;
+    }
+    .shop-grid {
+        grid-template-columns: 1fr;
+    }
+    .global-search {
+        max-width: 140px;
     }
 }
 
@@ -3405,6 +3737,26 @@ body.admin-bar .dashboard-wrapper {
     grid-template-columns: 240px 1fr;
     gap: 32px;
     align-items: start;
+}
+
+.shop-layout-modern {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 40px;
+}
+.shop-sidebar-title {
+    font-size: 16px;
+    font-weight: var(--fw-bold, 700);
+    margin-bottom: 20px;
+    color: var(--text-color);
+}
+.shop-categories-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 /* Shop Sidebar */
@@ -7138,4 +7490,37 @@ body.admin-bar .dashboard-wrapper {
 }
 .dark-mode .order-note-text {
     color: var(--text-color);
+}
+
+/* ============================================================
+   GLOBAL UX EXTRAS
+   ============================================================ */
+
+/* Top Loading Bar (NProgress-style) */
+.serc-nprogress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    z-index: 99999;
+    background: linear-gradient(to right, var(--primary-green, #10B981), #34D399);
+    transform-origin: left;
+    pointer-events: none;
+}
+
+/* Responsive Table Wrappers — ensure any table container allows horizontal scroll */
+#report-table-container,
+.history-container,
+.reports-table-section,
+.serc-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+/* Orders table wrapper */
+.orders-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }

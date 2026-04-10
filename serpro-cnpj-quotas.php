@@ -95,15 +95,16 @@ function serc_frontend_assets()
 {
     // jQuery Mask for CPF/CNPJ formatting
     wp_enqueue_script('jquery-mask', plugins_url('jQuery-Mask-Plugin-master/dist/jquery.mask.min.js', __FILE__), array('jquery'), '1.14.16', true);
-    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '3.3.5', true);
+    wp_enqueue_script('serc-frontend', plugins_url('assets/js/serc-frontend.js', __FILE__), array('jquery', 'jquery-mask'), '3.3.9', true);
 
-    // External Assets (Google Fonts & Phosphor Icons)
-    wp_enqueue_style('serc-google-fonts', 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap', array(), null);
-    wp_enqueue_script('serc-phosphor-icons', 'https://unpkg.com/@phosphor-icons/web', array(), null, false);
+    // Register Scripts and Styles
+    $js_version = defined('WP_DEBUG') && WP_DEBUG ? time() : '3.3.9';
 
+    // Fonts - Inter
+    wp_enqueue_style('serc-fonts-inter', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap', array(), null);
 
     // Main Dashboard Styles
-    wp_enqueue_style('serc-dashboard-style', plugins_url('assets/css/style.css', __FILE__), array(), '3.3.4');
+    wp_enqueue_style('serc-dashboard-style', plugins_url('assets/css/style.css', __FILE__), array(), $js_version);
 
     wp_localize_script('serc-frontend', 'serc_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
@@ -144,6 +145,38 @@ function serc_log_activity($user_id, $type, $description)
         'description' => $description,
         'timestamp' => current_time('timestamp'),
         'date' => current_time('Y-m-d H:i:s')
+    ];
+
+    // Keep only last 50 activities
+    if (count($activities) > 50) {
+        $activities = array_slice($activities, -50);
+    }
+
+    update_user_meta($user_id, 'serc_activities', $activities);
+}
+
+/**
+ * Log a single unified query activity that includes the debited credit value.
+ * This replaces the old pattern of logging separate 'query' and 'debit' events,
+ * which caused duplicate rows in the Reports history for all consultation types.
+ *
+ * @param int    $user_id  User ID
+ * @param string $type     Integration/query type (e.g. 'ic_telefone', 'pf_dadosbasicos')
+ * @param float  $debited  Credits debited (0.0 if free/no debit configured)
+ */
+function serc_log_activity_query($user_id, $type, $debited = 0.0)
+{
+    $activities = get_user_meta($user_id, 'serc_activities', true);
+    if (!is_array($activities)) {
+        $activities = [];
+    }
+
+    $activities[] = [
+        'type'        => 'query',
+        'description' => 'Consulta ' . $type,
+        'credit_value'=> floatval($debited),
+        'timestamp'   => current_time('timestamp'),
+        'date'        => current_time('Y-m-d H:i:s'),
     ];
 
     // Keep only last 50 activities
@@ -1156,54 +1189,83 @@ function serc_get_credit_report_data()
 
     $consolidated = [];
     foreach ($activities as $activity) {
-        $ts = $activity['timestamp'];
+        $ts = filter_var($activity['timestamp'], FILTER_VALIDATE_INT);
+        if (!$ts) $ts = current_time('timestamp');
         if ($ts < $start || $ts > $end) continue;
 
         if ($activity['type'] === 'query' || $activity['type'] === 'debit') {
             
-            // Round timestamp to 5 seconds to group related debit and query
-            $group_key = round($ts / 5);
-            
-            if (!isset($consolidated[$group_key])) {
-                $consolidated[$group_key] = [
-                    'date' => date('d/m/Y', $ts),
-                    'time' => date('H:i', $ts),
-                    'type' => 'query',
-                    'description' => '',
-                    'status' => 'Concluída',
-                    'credit_value' => 0,
-                    'timestamp' => $ts
-                ];
+            // Look back up to 15 seconds to find a matching pair
+            $matched_idx = -1;
+            for ($i = count($consolidated) - 1; $i >= 0; $i--) {
+                if (abs($consolidated[$i]['timestamp'] - $ts) <= 15) {
+                    // Match a query to a debit, or a debit to a query
+                    if ($activity['type'] === 'query' && $consolidated[$i]['type'] === 'debit') {
+                        $matched_idx = $i; break;
+                    }
+                    if ($activity['type'] === 'debit' && $consolidated[$i]['type'] === 'query') {
+                        $matched_idx = $i; break;
+                    }
+                }
             }
             
+            $credit_val_from_act = 0.0;
             if ($activity['type'] === 'debit') {
                 if (preg_match('/-([0-9]+\.?[0-9]*)$/', $activity['description'], $matches)) {
-                    $credit_value = floatval($matches[1]);
-                    $consolidated[$group_key]['credit_value'] += $credit_value;
-                    $total_credits += $credit_value;
-                    
-                    // Chart
-                    $activity_date = date('Y-m-d', $ts);
-                    if (!isset($chart_buckets[$activity_date])) {
-                        $chart_buckets[$activity_date] = 0;
-                    }
-                    $chart_buckets[$activity_date] += $credit_value;
+                    $credit_val_from_act = floatval($matches[1]);
                 }
-            } else if ($activity['type'] === 'query') {
-                $total_queries++;
-                $consolidated[$group_key]['description'] = $activity['description'];
+            } else {
+                $credit_val_from_act = isset($activity['credit_value']) ? floatval($activity['credit_value']) : 0.0;
             }
-        }
-    }
-    
-    // Cleanup descriptions if a bucket only had a debit but no query
-    foreach ($consolidated as $k => $c) {
-        if (empty($c['description'])) {
-            $consolidated[$k]['description'] = 'Consulta realizada';
+
+            if ($matched_idx !== -1) {
+                // Merge into existing pair
+                $c =& $consolidated[$matched_idx];
+                
+                // If the found item was a debit, and we are adding a query, upgrade the type
+                if ($activity['type'] === 'query') {
+                    $c['type'] = 'query';
+                    $c['description'] = $activity['description'];
+                    $total_queries++;
+                }
+                
+                // Only merge credit if it wasn't already set
+                if ($c['credit_value'] == 0.0 && $credit_val_from_act > 0) {
+                    $c['credit_value'] = $credit_val_from_act;
+                    $total_credits += $credit_val_from_act;
+                    
+                    $activity_date = date('Y-m-d', $ts);
+                    if (!isset($chart_buckets[$activity_date])) $chart_buckets[$activity_date] = 0;
+                    $chart_buckets[$activity_date] += $credit_val_from_act;
+                }
+            } else {
+                // No match, create new entry
+                $new_entry = [
+                    'date'         => date('d/m/Y', $ts),
+                    'time'         => date('H:i', $ts),
+                    'type'         => $activity['type'],
+                    'description'  => $activity['description'],
+                    'credit_value' => $credit_val_from_act,
+                    'timestamp'    => $ts
+                ];
+                
+                $consolidated[] = $new_entry;
+                
+                if ($activity['type'] === 'query') {
+                    $total_queries++;
+                }
+                
+                if ($credit_val_from_act > 0) {
+                    $total_credits += $credit_val_from_act;
+                    $activity_date = date('Y-m-d', $ts);
+                    if (!isset($chart_buckets[$activity_date])) $chart_buckets[$activity_date] = 0;
+                    $chart_buckets[$activity_date] += $credit_val_from_act;
+                }
+            }
         }
     }
 
-    $filtered = array_values($consolidated);
+    $filtered = $consolidated;
 
     // Sort filtered activities by timestamp desc
     usort($filtered, function ($a, $b) {
@@ -2609,11 +2671,12 @@ function serc_lookup()
         $new_balance = $current_balance - $debit_needed;
         update_user_meta($user_id, 'serc_credit_balance', $new_balance);
         $debited = $debit_needed;
-        serc_log_activity($user_id, 'debit', 'Débito consulta ' . $type . ': -' . $debited);
     }
 
+    // Log a single unified query activity (includes debit value to avoid duplicates in reports)
+    serc_log_activity_query($user_id, $type, $debited);
+
     // Save Consultant Data & PDF
-    // Always generate PDF from JSON data (no longer depends on API-provided PDF)
     $pdf_base64 = null;
     $filename = 'consulta-' . $type . '-' . time() . '.pdf';
     $download_url = '';
@@ -2657,9 +2720,6 @@ function serc_lookup()
         }
         update_post_meta($consulta_id, 'upload_status', $upload_status);
     }
-
-    // Log the query activity
-    serc_log_activity($user_id, 'query', 'Consulta ' . $type);
 
     // Return Success
     wp_send_json_success(array(
@@ -3230,6 +3290,7 @@ function serc_upload()
     if (empty($uploads['basedir']) || !is_writable($uploads['basedir'])) {
         error_log('SERPRO Consultas: uploads not writable basedir=' . ($uploads['basedir'] ?? ''));
     }
+    $js_version = defined('WP_DEBUG') && WP_DEBUG ? time() : '3.3.6';
     $filename = 'upload-' . $uid . '-' . time() . '.pdf';
     $b64 = 'data:application/pdf;base64,' . base64_encode($content);
     $up = serc_upload_pdf_to_storage($filename, $b64);

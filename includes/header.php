@@ -119,23 +119,50 @@ if (!defined('ABSPATH'))
             <i data-lucide="house"></i>
             <span>Início</span>
         </a>
-        <a href="<?php echo serc_get_dashboard_url(['view' => 'history']); ?>"
-            class="mobile-nav-item <?php echo (isset($_GET['view']) && $_GET['view'] === 'history') ? 'active' : ''; ?>">
-            <i data-lucide="history"></i>
-            <span>Histórico</span>
+        <a href="<?php echo serc_get_dashboard_url(['view' => 'reports']); ?>"
+            class="mobile-nav-item <?php echo (isset($_GET['view']) && $_GET['view'] === 'reports') ? 'active' : ''; ?>">
+            <i data-lucide="bar-chart-2"></i>
+            <span>Relatórios</span>
         </a>
         <a href="<?php echo serc_get_dashboard_url(['view' => 'category']); ?>"
             class="mobile-nav-item nav-highlight <?php echo (isset($_GET['view']) && ($_GET['view'] === 'category' || $_GET['view'] === 'query')) ? 'active' : ''; ?>">
             <i data-lucide="search"></i>
             <span>Consultas</span>
         </a>
-        <a href="https://wa.me/5511999999999" target="_blank" class="mobile-nav-item">
-            <i data-lucide="message-circle"></i>
-            <span>Suporte</span>
+        <a href="<?php echo serc_get_dashboard_url(['view' => 'shop']); ?>"
+            class="mobile-nav-item <?php echo (isset($_GET['view']) && $_GET['view'] === 'shop') ? 'active' : ''; ?>">
+            <i data-lucide="shopping-cart"></i>
+            <span>Loja</span>
         </a>
-        <a href="<?php echo serc_get_dashboard_url(['view' => 'settings']); ?>"
-            class="mobile-nav-item <?php echo (isset($_GET['view']) && $_GET['view'] === 'settings') ? 'active' : ''; ?>">
+        <a href="javascript:void(0)" onclick="sercToggleAccountSheet()" class="mobile-nav-item">
             <i data-lucide="user"></i>
             <span>Conta</span>
         </a>
+    </div>
+
+    <!-- Mobile Account Bottom Sheet (Hidden by default) -->
+    <div class="serc-account-sheet-overlay" id="sercAccountSheetOverlay" onclick="sercToggleAccountSheet()"></div>
+    <div class="serc-account-sheet" id="sercAccountSheet">
+        <div class="serc-account-sheet-drag"></div>
+        <div class="serc-account-sheet-content">
+            <div class="serc-account-sheet-header">
+                <h3>Minha Conta</h3>
+                <p>Navegue pelas opções do seu perfil</p>
+            </div>
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'settings']); ?>" onclick="sercToggleAccountSheet()" class="serc-sheet-item">
+                <div class="serc-sheet-icon"><i data-lucide="settings"></i></div>
+                <div class="serc-sheet-text">Configurações da conta</div>
+                <i data-lucide="chevron-right" class="serc-sheet-arrow"></i>
+            </a>
+            <a href="<?php echo serc_get_dashboard_url(['view' => 'history']); ?>" onclick="sercToggleAccountSheet()" class="serc-sheet-item">
+                <div class="serc-sheet-icon"><i data-lucide="file-text"></i></div>
+                <div class="serc-sheet-text">Meu histórico avançado</div>
+                <i data-lucide="chevron-right" class="serc-sheet-arrow"></i>
+            </a>
+            <div class="serc-sheet-divider"></div>
+            <a href="<?php echo wp_logout_url(home_url()); ?>" onclick="sercToggleAccountSheet()" class="serc-sheet-item serc-sheet-danger">
+                <div class="serc-sheet-icon"><i data-lucide="log-out"></i></div>
+                <div class="serc-sheet-text">Sair da plataforma</div>
+            </a>
+        </div>
     </div>

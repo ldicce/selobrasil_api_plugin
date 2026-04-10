@@ -223,9 +223,39 @@ $fav_count = count($favorites);
                 // Última atividade (qualquer tipo)
                 $last_activities = serc_get_user_activities($user_id, 1);
                 $last_act        = !empty($last_activities) ? $last_activities[0] : null;
-                $last_act_ago    = $last_act
-                    ? human_time_diff($last_act['timestamp'], current_time('timestamp')) . ' atrás'
-                    : 'Nenhuma';
+                
+                $action_label = 'Atualização de dados';
+                $time_label   = '';
+
+                if ($last_act) {
+                    // Type standardization
+                    if ($last_act['type'] === 'query') {
+                        $action_label = 'Consulta realizada';
+                    } elseif ($last_act['type'] === 'download') {
+                        $action_label = 'Download de relatório';
+                    } elseif ($last_act['type'] === 'access') {
+                        $action_label = 'Acesso a funcionalidade';
+                    }
+
+                    // Time logic
+                    $ts = intval($last_act['timestamp']);
+                    $now = current_time('timestamp');
+                    $diff = max(0, $now - $ts);
+                    
+                    $today_midnight = strtotime('today', $now);
+                    $yesterday_midnight = strtotime('yesterday', $now);
+                    
+                    if ($diff < 3600) {
+                        $mins = floor($diff / 60);
+                        $time_label = $mins <= 1 ? 'agora mesmo' : "há {$mins} minutos";
+                    } else if ($ts >= $today_midnight) {
+                        $time_label = 'hoje às ' . date('H:i', $ts);
+                    } else if ($ts >= $yesterday_midnight) {
+                        $time_label = 'ontem às ' . date('H:i', $ts);
+                    } else {
+                        $time_label = 'em ' . date('d/m/Y', $ts);
+                    }
+                }
                 ?>
 
                 <!-- Linha 1: Créditos e Consultas do mês -->
@@ -261,8 +291,15 @@ $fav_count = count($favorites);
                     <div class="dash-summary-tile dash-summary-tile--neutral">
                         <div class="dash-summary-tile__icon"><i data-lucide="clock"></i></div>
                         <div class="dash-summary-tile__info">
-                            <span class="dash-summary-tile__label">Última consulta</span>
-                            <span class="dash-summary-tile__value dash-summary-tile__value--sm"><?php echo esc_html($last_act_ago); ?></span>
+                            <span class="dash-summary-tile__label">Última atividade</span>
+                            <?php if ($last_act): ?>
+                                <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+                                    <span style="color: #FFFFFF; font-weight: 500; font-size: 15px; letter-spacing: -0.2px;"><?php echo esc_html($action_label); ?></span>
+                                    <span style="color: #A0A0A0; font-size: 13px;">• <?php echo esc_html($time_label); ?></span>
+                                </div>
+                            <?php else: ?>
+                                <span class="dash-summary-tile__value dash-summary-tile__value--sm" style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Nenhuma atividade</span>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

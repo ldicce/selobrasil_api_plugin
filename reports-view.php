@@ -426,6 +426,11 @@ if (!$is_ajax) {
                         rd.activities.forEach(function(act) {
                             var creditVal   = act.credit_value ? parseFloat(act.credit_value).toFixed(2) : '0.00';
                             var displayVal  = act.credit_value ? ('-' + creditVal) : creditVal;
+                            
+                            var typeLabel = (act.type === 'debit') ? 'Atualização de Saldo' : 'Consulta Realizada';
+                            var typeBadgeStyle = (act.type === 'debit') 
+                                ? 'background:rgba(245, 158, 11, 0.1); color:#FCD34D; border:1px solid rgba(245, 158, 11, 0.2);' 
+                                : 'background:var(--card-bg-elevated, rgba(255,255,255,0.05)); color:var(--text-color); border:1px solid var(--border-color, rgba(255,255,255,0.1));';
 
                             tbody.append(
                                 '<tr>' +
@@ -433,7 +438,7 @@ if (!$is_ajax) {
                                     '<div class="reports-table-date" style="font-weight:600; color:var(--text-color);">' + act.date + '</div>' +
                                     '<div class="reports-table-time" style="color:var(--text-muted);">' + act.time + '</div>' +
                                 '</td>' +
-                                '<td><span class="reports-type-badge" style="background:var(--card-bg-elevated, rgba(255,255,255,0.05)); color:var(--text-color); border:1px solid var(--border-color, rgba(255,255,255,0.1)); padding:4px 10px; border-radius:6px; font-size:11px;">Consulta Realizada</span></td>' +
+                                '<td><span class="reports-type-badge" style="' + typeBadgeStyle + ' padding:4px 10px; border-radius:6px; font-size:11px;">' + typeLabel + '</span></td>' +
                                 '<td class="reports-table-desc" style="color:var(--text-muted);">' + act.description + '</td>' +
                                 '<td style="text-align:right; font-weight:600; color:var(--text-color);">' + displayVal + '</td>' +
                                 '</tr>'

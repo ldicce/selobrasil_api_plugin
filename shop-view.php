@@ -42,11 +42,11 @@ $limit = 12;
 
     <!-- 4. Main Shop Area -->
     <div class="dash-pane pane-full-width">
-        <div class="shop-layout-modern" style="display: grid; grid-template-columns: 240px 1fr; gap: 40px;">
+        <div class="shop-layout-modern">
             <!-- Filters Sidebar -->
             <aside class="shop-sidebar-refined">
-                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 20px; color: var(--text-color);">Categorias</h3>
-                <ul class="shop-categories-list" style="list-style: none; padding:0; margin:0; display: flex; flex-direction: column; gap: 8px;">
+                <h3 class="shop-sidebar-title">Categorias</h3>
+                <ul class="shop-categories-list">
                     <li>
                         <a href="?view=shop" class="shop-cat-btn <?php echo empty($current_category) ? 'active' : ''; ?>" data-category="">
                             Todos os Pacotes

@@ -114,15 +114,15 @@ if ($query->have_posts()) {
                 <div class="alert-info-minimal" style="margin-top: 20px;">Nenhuma consulta registrada nos filtros selecionados.</div>
             <?php else: ?>
                 <?php foreach ($consultas as $consulta): ?>
-                    <div class="integration-row" style="grid-template-columns: 2fr 1fr 1fr 1fr;">
-                        <div class="integration-info">
-                            <span class="integration-name"><?php echo date('d/m/Y H:i', strtotime($consulta['date'])); ?></span>
-                            <span class="integration-desc"><?php echo strtoupper(esc_html($consulta['type'])); ?></span>
+                    <div class="history-item-row">
+                        <div class="history-item-info">
+                            <span class="history-item-date"><?php echo date('d/m/Y H:i', strtotime($consulta['date'])); ?></span>
+                            <span class="history-item-type"><?php echo strtoupper(esc_html($consulta['type'])); ?></span>
                         </div>
-                        <div>
+                        <div class="history-item-id">
                             <span class="badge-value-tag">#<?php echo esc_html($consulta['ID']); ?></span>
                         </div>
-                        <div>
+                        <div class="history-item-status">
                             <?php
                             $isDone = (stripos($consulta['status'], 'concluído') !== false);
                             $class = $isDone ? 'status-success' : 'status-pending';
@@ -132,7 +132,7 @@ if ($query->have_posts()) {
                                 <?php echo esc_html($consulta['status']); ?>
                             </span>
                         </div>
-                        <div style="text-align: right;">
+                        <div class="history-item-action">
                             <?php if (!empty($consulta['filename'])): ?>
                                 <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=serc_download&hash=' . serc_consulta_ensure_hash($consulta['ID']))); ?>" class="btn-consultar-small" title="Baixar PDF">
                                     <i data-lucide="download"></i>
