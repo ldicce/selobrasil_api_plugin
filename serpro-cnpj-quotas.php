@@ -1753,19 +1753,36 @@ function serc_filter_display_data($data, $depth = 0)
         return $data;
     $filtered = array();
     $skip_keys = array(
+        // Binary / internal tokens
         'pdfBase64', 'pdf_base64', 'link', 'hash', 'token', 'aux', 'assinatura', 'signature',
-        // Internal API metadata — not relevant to the end user
+        // API metadata — not relevant to the end user
         'status', 'apiFull', 'api_full', 'apifull', 'apiFullUrl', 'api_full_url',
         'statusRetorno', 'status_retorno', 'statusretorno',
+        // Request echo / control wrappers
+        'header', 'Header', 'parametros', 'Parametros',
+        'controle', 'Controle', 'control',
+        // Internal counters and flags
+        'quantidadeOcorrencias', 'quantidade_ocorrencias', 'qtdOcorrencias', 'qtd_ocorrencias',
+        'registroLocalizado', 'registro_localizado',
+        // Numeric category/source codes that appear inside ocorrencias
+        'conteudo', 'fonte',
     );
     foreach ($data as $key => $value) {
         if (in_array($key, $skip_keys, true))
             continue;
-        // Also skip by key name using case-insensitive match for apifull / status variants
+        // Case-insensitive key matching for common metadata patterns
         $key_lower = strtolower($key);
         if (strpos($key_lower, 'apifull') !== false)
             continue;
         if ($key_lower === 'statusretorno' || $key_lower === 'status_retorno')
+            continue;
+        if ($key_lower === 'header' || $key_lower === 'parametros')
+            continue;
+        if ($key_lower === 'controle' || $key_lower === 'control')
+            continue;
+        if (strpos($key_lower, 'quantidadeocorrencias') !== false || strpos($key_lower, 'qtdocorrencias') !== false)
+            continue;
+        if ($key_lower === 'registrolocalizado' || $key_lower === 'registro_localizado')
             continue;
         // Skip any string that looks like base64 blob (>1000 chars, no spaces)
         if (is_string($value) && strlen($value) > 1000 && !preg_match('/\s/', $value))
@@ -1785,6 +1802,11 @@ function serc_filter_display_data($data, $depth = 0)
                 continue;
             // Skip strings that are only whitespace
             if (is_string($value) && trim($value) === '')
+                continue;
+            // Skip zero values (integer, float or string "0") — avoids polluting the PDF
+            if ($value === 0 || $value === 0.0 || $value === '0')
+                continue;
+            if (is_numeric($value) && floatval($value) === 0.0)
                 continue;
             $filtered[$key] = $value;
         }
@@ -1811,8 +1833,12 @@ function serc_render_data_to_html($data, $depth = 0, $parent_key = '')
         foreach ($data as $i => $item) {
             if (is_array($item)) {
                 $item_label = $parent_key ? serc_humanize_key($parent_key) . ' ' . ($i + 1) : 'Item ' . ($i + 1);
-                $html .= '<div class="section-title">' . htmlspecialchars($item_label) . '</div>';
-                $html .= serc_render_data_to_html($item, $depth + 1, $parent_key);
+                // Only emit the section title if the child content is non-empty
+                $child_html = serc_render_data_to_html($item, $depth + 1, $parent_key);
+                if ($child_html !== '' && strpos($child_html, 'Sem dados disponíveis') === false) {
+                    $html .= '<div class="section-title">' . htmlspecialchars($item_label) . '</div>';
+                    $html .= $child_html;
+                }
             } else {
                 $html .= '<p>&bull; ' . serc_format_value($item) . '</p>';
             }
@@ -1843,11 +1869,14 @@ function serc_render_data_to_html($data, $depth = 0, $parent_key = '')
             $html .= '</table>';
         }
 
-        // Render nested objects as titled sections
+        // Render nested objects as titled sections — only if they produce content
         foreach ($nested as $key => $value) {
             $label = serc_humanize_key($key);
-            $html .= '<div class="section-title">' . htmlspecialchars($label) . '</div>';
-            $html .= serc_render_data_to_html($value, $depth + 1, $key);
+            $child_html = serc_render_data_to_html($value, $depth + 1, $key);
+            if ($child_html !== '' && strpos($child_html, 'Sem dados disponíveis') === false) {
+                $html .= '<div class="section-title">' . htmlspecialchars($label) . '</div>';
+                $html .= $child_html;
+            }
         }
     }
     return $html;
