@@ -196,10 +196,15 @@ jQuery(function ($) {
         console.error('[SERC] Error response:', resp);
         var d = resp && resp.data;
         var errorCode = (typeof d === 'string') ? d : (d && d.code ? d.code : '');
+        // Prefer the server-provided message over generic fallbacks
+        var serverMsg = (d && typeof d === 'object' && d.message) ? d.message : '';
         if (errorCode === 'no_quota') {
           var url = (d && d.purchase_url) ? d.purchase_url : '';
           var link = url ? (' <a href="' + url + '" target="_blank">Adquira um plano</a>.') : ' Adquira um plano.';
           $result.html('<span style="color:red;font-weight:bold;">Você não possui créditos para esta consulta.</span><br>' + link);
+        } else if (serverMsg) {
+          // Show the actual error message from the server (e.g. API provider errors)
+          $result.html('<span style="color:red;font-weight:bold;">' + serverMsg + '</span>');
         } else if (errorCode === 'api_error' || errorCode === 'api_timeout') {
           $result.html('<span style="color:red;font-weight:bold;">Houve um problema ao consultar. Tente novamente mais tarde.</span>');
         } else if (errorCode === 'invalid_input') {

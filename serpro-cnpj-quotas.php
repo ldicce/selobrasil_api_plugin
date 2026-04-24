@@ -1367,7 +1367,6 @@ function serc_shortcodes_page()
         array('label' => 'CPF Completo e Renda Presumida', 'code' => '[serc_cpf_form]'),
         array('label' => 'CPF Completo com Renda', 'code' => '[serc_cpf_renda_form]'),
         array('label' => 'Consulta por Nome', 'code' => '[serc_ic_nome_form]'),
-        array('label' => 'Consulta por Telefone', 'code' => '[serc_ic_telefone_form]'),
         array('label' => 'Consulta por Placa', 'code' => '[serc_ic_placa_form]'),
         array('label' => 'CNH', 'code' => '[serc_ic_cnh_form]'),
         array('label' => 'Dossiê Jurídico', 'code' => '[serc_dossie_juridico_form]'),
@@ -1640,7 +1639,7 @@ function serc_generate_pdf_from_data($type, $data)
     $type_labels = array(
         'cnpj' => 'Consulta CNPJ', 'cpf' => 'Consulta CPF',
         'cpf_renda' => 'CPF com Renda', 'cpf_ultra_completo' => 'CPF Ultra Completo',
-        'ic_nome' => 'Busca por Nome', 'ic_telefone' => 'Busca por Telefone',
+        'ic_nome' => 'Busca por Nome',
         'ic_placa' => 'Consulta por Placa', 'ic_cnh' => 'Consulta CNH',
         'crlv' => 'Consulta CRLV', 'proprietario_placa' => 'Proprietário por Placa',
         'gravame' => 'Consulta Gravame', 'renainf' => 'Consulta RENAINF',
@@ -1753,12 +1752,26 @@ function serc_filter_display_data($data, $depth = 0)
     if ($depth > 10 || !is_array($data))
         return $data;
     $filtered = array();
-    $skip_keys = array('pdfBase64', 'pdf_base64', 'link', 'hash', 'token', 'aux', 'assinatura', 'signature');
+    $skip_keys = array(
+        'pdfBase64', 'pdf_base64', 'link', 'hash', 'token', 'aux', 'assinatura', 'signature',
+        // Internal API metadata — not relevant to the end user
+        'status', 'apiFull', 'api_full', 'apifull', 'apiFullUrl', 'api_full_url',
+        'statusRetorno', 'status_retorno', 'statusretorno',
+    );
     foreach ($data as $key => $value) {
         if (in_array($key, $skip_keys, true))
             continue;
+        // Also skip by key name using case-insensitive match for apifull / status variants
+        $key_lower = strtolower($key);
+        if (strpos($key_lower, 'apifull') !== false)
+            continue;
+        if ($key_lower === 'statusretorno' || $key_lower === 'status_retorno')
+            continue;
         // Skip any string that looks like base64 blob (>1000 chars, no spaces)
         if (is_string($value) && strlen($value) > 1000 && !preg_match('/\s/', $value))
+            continue;
+        // Skip values that contain the apifull.com.br domain (URL fields from the API)
+        if (is_string($value) && stripos($value, 'apifull.com.br') !== false)
             continue;
         if (is_array($value)) {
             $child = serc_filter_display_data($value, $depth + 1);
@@ -1767,6 +1780,12 @@ function serc_filter_display_data($data, $depth = 0)
                 $filtered[$key] = $child;
             }
         } else {
+            // Skip null, empty string, and false values — do not include them in the PDF
+            if ($value === null || $value === '' || $value === false)
+                continue;
+            // Skip strings that are only whitespace
+            if (is_string($value) && trim($value) === '')
+                continue;
             $filtered[$key] = $value;
         }
     }
@@ -2022,14 +2041,7 @@ function serc_apifull_ic_nome($name, $state)
     );
 }
 
-function serc_apifull_ic_telefone($ddd, $phone, $state)
-{
-    return serc_apifull_post_extract_pdf_base64(
-        '/api/ic-telefone',
-        array('ddd' => $ddd, 'telefone' => $phone, 'state' => $state, 'link' => 'ic-telefone'),
-        'SERPRO Consultas: TELEFONE'
-    );
-}
+
 
 function serc_apifull_cnpj($cnpj)
 {
@@ -2402,18 +2414,8 @@ function serc_lookup()
     $cnpj = preg_replace('/\D+/', '', $_POST['cnpj'] ?? '');
     $document = preg_replace('/\D+/', '', $_POST['document'] ?? ''); // CPF or CNPJ
     $placa = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $_POST['placa'] ?? ''));
-    $phone_input = preg_replace('/\D+/', '', $_POST['phone'] ?? ''); // if frontend sends full phone
-    $ddd = preg_replace('/\D+/', '', $_POST['ddd'] ?? '');
-    // If phone is full (from legacy or single input), we might need to split it for some APIs if they require separation
-    // But for ic_telefone we now expect 'ddd' and 'phone' fields separately from frontend due to new config.
-    // However, if user uses old form or single input, we try to handle:
-    if (empty($ddd) && strlen($phone_input) >= 10) {
-        $ddd = substr($phone_input, 0, 2);
-        $phone_input = substr($phone_input, 2);
-    }
-    $telefone = preg_replace('/\D+/', '', $phone_input);
 
-    // State is needed for ic_nome and ic_telefone
+    // State is needed for ic_nome
     $state = strtoupper(preg_replace('/[^A-Za-z]/', '', $_POST['state'] ?? ''));
 
     // Input Validation based on type
@@ -2429,10 +2431,6 @@ function serc_lookup()
             $name = sanitize_text_field($_POST['name'] ?? '');
             if (empty($name) || strlen($state) !== 2)
                 wp_send_json_error('invalid_input', 400);
-            break;
-        case 'ic_telefone':
-            if (empty($ddd) || empty($telefone) || strlen($state) !== 2)
-                wp_send_json_error('invalid_phone', 400);
             break;
         case 'cnpj':
             if (strlen($cnpj) !== 14)
@@ -2530,9 +2528,6 @@ function serc_lookup()
             $name = sanitize_text_field($_POST['name'] ?? '');
             // $state already extracted
             $api_result = serc_apifull_ic_nome($name, $state);
-            break;
-        case 'ic_telefone':
-            $api_result = serc_apifull_ic_telefone($ddd, $telefone, $state);
             break;
         case 'cnpj':
             $api_result = serc_apifull_cnpj($cnpj);
@@ -2662,7 +2657,9 @@ function serc_lookup()
         } elseif (strpos($msg_lower, 'unauthorized') !== false || strpos($msg_lower, 'token') !== false) {
             $msg = 'Erro de autenticação com o provedor. Entre em contato com o suporte.';
         }
-        wp_send_json_error(array('message' => $msg, 'code' => $http_code), $http_code >= 200 ? $http_code : 500);
+        // Always return HTTP 200 so jQuery .done() fires and the user sees the
+        // friendly error message. The success:false flag communicates the failure.
+        wp_send_json_error(array('message' => $msg, 'code' => $http_code));
     }
 
     // Success - Debit Credits
@@ -2758,7 +2755,6 @@ function serc_get_consultation_types()
         'cpf' => 'CPF Completo e Renda Presumida',
         'cpf_renda' => 'CPF Completo com Renda',
         'ic_nome' => 'Consulta por Nome',
-        'ic_telefone' => 'Consulta por Telefone',
         'ic_placa' => 'Consulta por Placa',
         'ic_cnh' => 'CNH',
         'dossie_juridico' => 'Dossiê Jurídico',
