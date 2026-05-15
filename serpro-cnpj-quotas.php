@@ -46,7 +46,7 @@ function serc_get_dashboard_url($params = [])
 }
 
 add_action('wp_enqueue_scripts', 'serc_frontend_assets');
-add_action('admin_enqueue_scripts', 'serc_frontend_assets');
+add_action('admin_enqueue_scripts', 'serc_admin_assets');
 add_action('admin_menu', 'serc_add_admin_menu');
 
 /* Campos WooCommerce no produto */
@@ -89,7 +89,7 @@ add_shortcode('serc_dashboard', 'serc_render_frontend_dashboard_shortcode');
 
 
 /* =========================
-   Frontend Assets
+   Frontend Assets (public-facing pages only)
    ========================= */
 function serc_frontend_assets()
 {
@@ -110,6 +110,29 @@ function serc_frontend_assets()
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce(SERCNPJ_NONCE)
     ));
+}
+
+/* =========================
+   Admin Assets (only on plugin's own admin pages)
+   Prevents CSS/JS from breaking other admin pages like WooCommerce webhooks.
+   ========================= */
+function serc_admin_assets($hook)
+{
+    // Only load on plugin's own admin pages
+    $plugin_pages = array(
+        'toplevel_page_serc-dashboard',
+        'selo-brasil_page_serc-debit-settings',
+        'selo-brasil_page_serc-admin-reports',
+        'settings_page_serpro-consultas-shortcodes',
+        'settings_page_serpro-apifull-token',
+    );
+
+    if (!in_array($hook, $plugin_pages)) {
+        return;
+    }
+
+    // Load the same assets as the frontend
+    serc_frontend_assets();
 }
 
 /* =========================
@@ -2834,20 +2857,39 @@ function serc_get_consultation_types()
    ========================= */
 function serc_handle_order_completed($order_id_or_obj)
 {
+    // Re-entrancy guard: prevent recursive calls when save_meta_data()
+    // or other WC internals re-trigger order hooks
+    static $processing = array();
+
+    if (!function_exists('wc_get_order')) {
+        return;
+    }
+
     $order = is_object($order_id_or_obj) ? $order_id_or_obj : wc_get_order($order_id_or_obj);
     if (!$order)
         return;
 
+    $order_id = $order->get_id();
+
+    // Prevent re-entrant/recursive processing of the same order
+    if (isset($processing[$order_id])) {
+        return;
+    }
+    $processing[$order_id] = true;
+
     // Guard: prevent double credit addition (both woocommerce_new_order and
     // woocommerce_order_status_completed can fire for the same order)
     if ($order->get_meta('_serc_credits_applied')) {
-        error_log("SERPRO Consultas: Pedido #{$order->get_id()} créditos já aplicados — ignorando duplicata.");
+        error_log("SERPRO Consultas: Pedido #{$order_id} créditos já aplicados — ignorando duplicata.");
+        unset($processing[$order_id]);
         return;
     }
 
     $user_id = $order->get_user_id();
-    if (!$user_id)
+    if (!$user_id) {
+        unset($processing[$order_id]);
         return;
+    }
 
     $total_add = 0.0;
     foreach ($order->get_items() as $item) {
@@ -2876,17 +2918,33 @@ function serc_handle_order_completed($order_id_or_obj)
         $new_balance = round($current_balance + $total_add, 2);
         update_user_meta($user_id, 'serc_credit_balance', $new_balance);
 
-        // Mark order as processed to prevent duplicate credit additions
+        // Mark order as processed to prevent duplicate credit additions.
+        // IMPORTANT: Use save_meta_data() instead of save() to avoid triggering
+        // woocommerce_update_order hooks, which would cause WooCommerce webhooks
+        // to fire "order.updated" events and potentially create infinite loops.
         $order->update_meta_data('_serc_credits_applied', time());
-        $order->save();
+        $order->save_meta_data();
 
-        error_log("SERPRO Consultas: Pedido #{$order->get_id()} adicionou +{$total_add} créditos ao usuário {$user_id}. Saldo: {$new_balance}.");
+        error_log("SERPRO Consultas: Pedido #{$order_id} adicionou +{$total_add} créditos ao usuário {$user_id}. Saldo: {$new_balance}.");
     }
+
+    unset($processing[$order_id]);
 }
 
 /* Para pedidos criados já como concluídos */
 function serc_check_new_order_status($order_id)
 {
+    // Skip during REST API requests to avoid interfering with WooCommerce
+    // webhook delivery and REST API order creation.
+    // Credits will still be applied via woocommerce_order_status_completed.
+    if (defined('REST_REQUEST') && REST_REQUEST) {
+        return;
+    }
+
+    if (!function_exists('wc_get_order')) {
+        return;
+    }
+
     $order = wc_get_order($order_id);
     if ($order && $order->get_status() === 'completed') {
         serc_handle_order_completed($order);
@@ -2910,6 +2968,12 @@ function serc_wc_product_field()
 
 function serc_wc_save_product_field($post_id)
 {
+    // Don't run during REST API requests (webhooks, API product updates)
+    // to avoid deleting credit meta when $_POST fields are absent.
+    if (defined('REST_REQUEST') && REST_REQUEST) {
+        return;
+    }
+
     // Salva créditos gerais por produto
     if (isset($_POST['serc_general_credits'])) {
         $general = floatval(wc_clean($_POST['serc_general_credits']));
@@ -2935,6 +2999,12 @@ function serc_wc_variation_field($loop, $variation_data, $variation)
 
 function serc_wc_save_variation_field($variation_id, $i)
 {
+    // Don't run during REST API requests (webhooks, API variation updates)
+    // to avoid deleting credit meta when $_POST fields are absent.
+    if (defined('REST_REQUEST') && REST_REQUEST) {
+        return;
+    }
+
     // Salva créditos gerais da variação
     if (isset($_POST['variable_serc_general_credits'][$i])) {
         $general = floatval(wc_clean($_POST['variable_serc_general_credits'][$i]));
